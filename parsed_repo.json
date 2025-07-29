@@ -1,0 +1,13 @@
+[
+  {
+    "file": "repo-clone\\long_audio.py",
+    "name": "load_chunks",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "def load_chunks(filename):\n    long_audio = AudioSegment.from_mp3(filename)\n    audio_chunks = split_on_silence(\n        long_audio, min_silence_len=1800,\n        silence_thresh=-17\n    )\n    return audio_chunks\n",
+    "dependencies": [
+      "split_on_silence",
+      "AudioSegment.from_mp3"
+    ]
+  }
+]
