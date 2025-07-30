@@ -6,8 +6,23 @@ import re
 from pathlib import Path
 from git import Repo
 from collections import defaultdict
-
+import tokenize
 # --- Utility Functions ---
+
+def extract_comments(filepath):
+    comments = []
+    try:
+        with open(filepath, 'rb') as f:
+            tokens = tokenize.tokenize(f.readline)
+            for toknum, tokval, _, _, _ in tokens:
+                if toknum == tokenize.COMMENT:
+                    cleaned = tokval.lstrip('#').strip()
+                    if cleaned:
+                        comments.append(cleaned)
+    except Exception as e:
+        print(f"Failed to extract comments from {filepath}: {e}")
+    return comments
+
 
 def annotate_ast_with_parents(tree):
     for parent in ast.walk(tree):
@@ -88,6 +103,8 @@ def parse_file(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
         source = f.read()
     source_lines = source.splitlines(keepends=True)
+    comments = extract_comments(filepath)
+
 
     try:
         tree = ast.parse(source)
@@ -139,6 +156,7 @@ def parse_file(filepath):
                     },
                     "docstring": docstring if docstring else "",
                     "code": code,
+                    "comments": comments,
                     "dependencies": deps,
                     "imports": imports
                 }
@@ -173,6 +191,7 @@ def parse_file(filepath):
             },
             "docstring": "",
             "code": source,
+            "comments": comments,
             "dependencies": extract_dependencies(tree),
             "imports": imports
         }
@@ -190,7 +209,7 @@ def walk_repo(repo_path):
                 results.extend(chunks)
     return results
 
-def analyze_repo(repo_url, output_file="parsed_repo_3.json"):
+def analyze_repo(repo_url, output_file="parsed_repo_4.json"):
     clone_path = "repo-clone"
     if os.path.exists(clone_path):
         shutil.rmtree(clone_path)
@@ -205,4 +224,4 @@ def analyze_repo(repo_url, output_file="parsed_repo_3.json"):
     print(f"Extracted and saved {len(chunks)} code chunks to {output_file}")
 
 # Example usage
-analyze_repo("https://github.com/Kalebu/Python-Speech-Recognition-.git")
+analyze_repo("https://github.com/Mingyue-Cheng/FormerTime")
