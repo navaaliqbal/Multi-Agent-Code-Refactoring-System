@@ -1,0 +1,2791 @@
+[
+  {
+    "id": "repo-clone/args.py::__top_level__",
+    "file": "repo-clone/args.py",
+    "name": "__top_level__",
+    "type": "TopLevel",
+    "language": "python",
+    "ast_path": [
+      "Module"
+    ],
+    "is_script_entry": true,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 62,
+      "nesting_depth": 0,
+      "cyclomatic_complexity": 0,
+      "magic_numbers": [
+        0.001,
+        0.01,
+        0.2,
+        2,
+        3,
+        4,
+        6,
+        8,
+        16,
+        64,
+        100
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "import argparse\nimport os\nimport json\nfrom datautils import load_UCR\n\nparser = argparse.ArgumentParser()\n# dataset and dataloader args\nparser.add_argument('--save_path', type=str, default='test')\nparser.add_argument('--UCR_folder', type=str, default='ArticularyWordRecognition')\nparser.add_argument('--data_path', type=str,\n                    default='')\nparser.add_argument('--device', type=str, default='cuda:0')\nparser.add_argument('--train_batch_size', type=int, default=64)\nparser.add_argument('--test_batch_size', type=int, default=64)\n\n# model args\nparser.add_argument('--dropout', type=float, default=0.2)\nparser.add_argument('--attn_heads', type=int, default=4)\nparser.add_argument('--eval_per_steps', type=int, default=16)\nparser.add_argument('--enable_res_parameter', type=int, default=1)\nparser.add_argument('--loss', type=str, default='ce', choices=['bce', 'ce'])\nparser.add_argument('--pooling_type', type=str, default='mean', choices=['mean', 'max', 'last_token', 'cat'])\nparser.add_argument('--save_model', type=int, default=1)\n\n# FormerTime args\nparser.add_argument('--stages', type=int, default=3)\nparser.add_argument('--layer_per_stage', type=int, default=[6, 6, 6])\nparser.add_argument('--hidden_size_per_stage', type=list, default=[64, 64, 64])\nparser.add_argument('--slice_per_stage', type=list, default=[16, 2, 2])  # changes according to the dataset\nparser.add_argument('--stride_per_stage', type=int, default=[8, 2, 2])\nparser.add_argument('--tr', type=list, default=[2, 1, 1])  # temporal reduction ratio\nparser.add_argument('--position_location', type=str, default='top', choices=['top', 'middle'])\nparser.add_argument('--position_type', type=str, default='cond',\n                    choices=['cond', 'relative', 'static', 'none', 'conv_static'])\n\n# train args\nparser.add_argument('--lr', type=float, default=0.001)\nparser.add_argument('--lr_decay_rate', type=float, default=1.)\nparser.add_argument('--lr_decay_steps', type=int, default=100)\nparser.add_argument('--weight_decay', type=float, default=0.01)\nparser.add_argument('--num_epoch', type=int, default=100)\n\nargs = parser.parse_args()\nif args.data_path is None:\n    Train_data, Test_data = load_UCR(folder=args.UCR_folder)\n    args.num_class = len(set(Train_data[1]))\n    args.loss = 'ce'\nelse:\n    path = args.data_path\n    Train_data, Test_data = load_UCR(path, folder=args.UCR_folder)\n    args.num_class = len(set(Train_data[1]))\n    args.loss = 'ce'\n\nargs.eval_per_steps = max(1, int(len(Train_data[0]) / args.train_batch_size))\nargs.lr_decay_steps = args.eval_per_steps\nif not os.path.exists(args.save_path):\n    os.makedirs(args.save_path)\nconfig_file = open(args.save_path + '/args.json', 'w')\ntmp = args.__dict__\njson.dump(tmp, config_file, indent=1)\nprint(args)\nconfig_file.close()\n",
+    "comments": [
+      "dataset and dataloader args",
+      "model args",
+      "FormerTime args",
+      "changes according to the dataset",
+      "temporal reduction ratio",
+      "train args"
+    ],
+    "dependencies": [
+      "argparse.ArgumentParser",
+      "config_file.close",
+      "int",
+      "json.dump",
+      "len",
+      "load_UCR",
+      "max",
+      "open",
+      "os.makedirs",
+      "os.path.exists",
+      "parser.add_argument",
+      "parser.parse_args",
+      "print",
+      "set"
+    ],
+    "imports": [
+      "argparse",
+      "datautils.load_UCR",
+      "json",
+      "os"
+    ]
+  },
+  {
+    "id": "repo-clone/dataset.py::Dataset",
+    "file": "repo-clone/dataset.py",
+    "name": "Dataset",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Dataset"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Dataset",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 19,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class Dataset(Data.Dataset):\n    def __init__(self, device, mode):\n        self.device = device\n        if mode == 'train':\n            self.datas, self.label = Train_data\n        else:\n            self.datas, self.label = Test_data\n        self.mode = mode\n\n    def __len__(self):\n        return len(self.datas)\n\n    def __getitem__(self, item):\n        data = torch.tensor(self.datas[item]).to(self.device)\n        label = self.label[item]\n        return data, torch.tensor(label).to(self.device)\n\n    def shape(self):\n        return self.datas[0].shape\n",
+    "comments": [],
+    "dependencies": [
+      "len",
+      "torch.tensor",
+      "torch.tensor(label).to",
+      "torch.tensor(self.datas[item]).to"
+    ],
+    "imports": [
+      "args.Test_data",
+      "args.Train_data",
+      "torch",
+      "torch.utils.data"
+    ]
+  },
+  {
+    "id": "repo-clone/dataset.py::__init__",
+    "file": "repo-clone/dataset.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Dataset",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Dataset",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 3,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 7,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, device, mode):\n        self.device = device\n        if mode == 'train':\n            self.datas, self.label = Train_data\n        else:\n            self.datas, self.label = Test_data\n        self.mode = mode\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "args.Test_data",
+      "args.Train_data",
+      "torch",
+      "torch.utils.data"
+    ]
+  },
+  {
+    "id": "repo-clone/dataset.py::__len__",
+    "file": "repo-clone/dataset.py",
+    "name": "__len__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Dataset",
+      "FunctionDef:__len__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Dataset",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __len__(self):\n        return len(self.datas)\n",
+    "comments": [],
+    "dependencies": [
+      "len"
+    ],
+    "imports": [
+      "args.Test_data",
+      "args.Train_data",
+      "torch",
+      "torch.utils.data"
+    ]
+  },
+  {
+    "id": "repo-clone/dataset.py::__getitem__",
+    "file": "repo-clone/dataset.py",
+    "name": "__getitem__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Dataset",
+      "FunctionDef:__getitem__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Dataset",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 4,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __getitem__(self, item):\n        data = torch.tensor(self.datas[item]).to(self.device)\n        label = self.label[item]\n        return data, torch.tensor(label).to(self.device)\n",
+    "comments": [],
+    "dependencies": [
+      "torch.tensor",
+      "torch.tensor(label).to",
+      "torch.tensor(self.datas[item]).to"
+    ],
+    "imports": [
+      "args.Test_data",
+      "args.Train_data",
+      "torch",
+      "torch.utils.data"
+    ]
+  },
+  {
+    "id": "repo-clone/dataset.py::shape",
+    "file": "repo-clone/dataset.py",
+    "name": "shape",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Dataset",
+      "FunctionDef:shape"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Dataset",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def shape(self):\n        return self.datas[0].shape\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "args.Test_data",
+      "args.Train_data",
+      "torch",
+      "torch.utils.data"
+    ]
+  },
+  {
+    "id": "repo-clone/datautils.py::padding_varying_length",
+    "file": "repo-clone/datautils.py",
+    "name": "padding_varying_length",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "FunctionDef:padding_varying_length"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 5,
+      "nesting_depth": 3,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "def padding_varying_length(data):\n    for i in range(data.shape[0]):\n        for j in range(data.shape[1]):\n            data[i, j, :][np.isnan(data[i, j, :])] = 0\n    return data\n",
+    "comments": [
+      "multivariate",
+      "print(raw_data_list)",
+      "univariate"
+    ],
+    "dependencies": [
+      "np.isnan",
+      "range"
+    ],
+    "imports": [
+      "numpy",
+      "scipy.io.arff"
+    ]
+  },
+  {
+    "id": "repo-clone/datautils.py::load_UCR",
+    "file": "repo-clone/datautils.py",
+    "name": "load_UCR",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "FunctionDef:load_UCR"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 68,
+      "nesting_depth": 4,
+      "cyclomatic_complexity": 11,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "def load_UCR(Path='../../archives/UCR_UEA/Multivariate_arff/', folder='Cricket'):\n    train_path = Path + folder + '/' + folder + '_TRAIN.arff'\n    test_path = Path + folder + '/' + folder + '_TEST.arff'\n    TRAIN_DATA = []\n    TRAIN_LABEL = []\n    label_dict = {}\n    label_index = 0\n    with open(train_path, encoding='UTF-8', errors='ignore') as f:\n        data, meta = arff.loadarff(f)\n        f.close()\n    if type(data[0][0]) == np.ndarray:  # multivariate\n        for index in range(data.shape[0]):\n            raw_data = data[index][0]\n            raw_label = data[index][1]\n            if label_dict.__contains__(raw_label):\n                TRAIN_LABEL.append(label_dict[raw_label])\n            else:\n                label_dict[raw_label] = label_index\n                TRAIN_LABEL.append(label_index)\n                label_index += 1\n            raw_data_list = raw_data.tolist()\n            # print(raw_data_list)\n            TRAIN_DATA.append(np.array(raw_data_list).astype(np.float32).transpose(-1, 0))\n\n        TEST_DATA = []\n        TEST_LABEL = []\n        with open(test_path, encoding='UTF-8', errors='ignore') as f:\n            data, meta = arff.loadarff(f)\n            f.close()\n        for index in range(data.shape[0]):\n            raw_data = data[index][0]\n            raw_label = data[index][1]\n            TEST_LABEL.append(label_dict[raw_label])\n            raw_data_list = raw_data.tolist()\n            TEST_DATA.append(np.array(raw_data_list).astype(np.float32).transpose(-1, 0))\n\n        TRAIN_DATA = padding_varying_length(np.array(TRAIN_DATA))\n        TEST_DATA = padding_varying_length(np.array(TEST_DATA))\n\n        return [np.array(TRAIN_DATA), np.array(TRAIN_LABEL)], [np.array(TEST_DATA), np.array(TEST_LABEL)]\n\n    else:  # univariate\n        for index in range(data.shape[0]):\n            raw_data = np.array(list(data[index]))[:-1]\n            raw_label = data[index][-1]\n            if label_dict.__contains__(raw_label):\n                TRAIN_LABEL.append(label_dict[raw_label])\n            else:\n                label_dict[raw_label] = label_index\n                TRAIN_LABEL.append(label_index)\n                label_index += 1\n            TRAIN_DATA.append(np.array(raw_data).astype(np.float32).reshape(-1, 1))\n\n        TEST_DATA = []\n        TEST_LABEL = []\n        with open(test_path, encoding='UTF-8', errors='ignore') as f:\n            data, meta = arff.loadarff(f)\n            f.close()\n        for index in range(data.shape[0]):\n            raw_data = np.array(list(data[index]))[:-1]\n            raw_label = data[index][-1]\n            TEST_LABEL.append(label_dict[raw_label])\n            TEST_DATA.append(np.array(raw_data).astype(np.float32).reshape(-1, 1))\n\n        TRAIN_DATA = padding_varying_length(np.array(TRAIN_DATA))\n        TEST_DATA = padding_varying_length(np.array(TEST_DATA))\n\n        return [np.array(TRAIN_DATA), np.array(TRAIN_LABEL)], [np.array(TEST_DATA), np.array(TEST_LABEL)]\n",
+    "comments": [
+      "multivariate",
+      "print(raw_data_list)",
+      "univariate"
+    ],
+    "dependencies": [
+      "TEST_DATA.append",
+      "TEST_LABEL.append",
+      "TRAIN_DATA.append",
+      "TRAIN_LABEL.append",
+      "arff.loadarff",
+      "f.close",
+      "label_dict.__contains__",
+      "list",
+      "np.array",
+      "np.array(raw_data).astype",
+      "np.array(raw_data).astype(np.float32).reshape",
+      "np.array(raw_data_list).astype",
+      "np.array(raw_data_list).astype(np.float32).transpose",
+      "open",
+      "padding_varying_length",
+      "range",
+      "raw_data.tolist",
+      "type"
+    ],
+    "imports": [
+      "numpy",
+      "scipy.io.arff"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::PositionalEmbedding",
+    "file": "repo-clone/FormerTime.py",
+    "name": "PositionalEmbedding",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:PositionalEmbedding"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "PositionalEmbedding",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 15,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class PositionalEmbedding(nn.Module):\n\n    def __init__(self, max_len, d_model, grad=True):\n        super(PositionalEmbedding, self).__init__()\n\n        # Compute the positional encodings once in log space.\n        self.pe = nn.Embedding(max_len, d_model)\n        self.grad = grad\n\n    def forward(self, x):\n        batch_size = x.size(0)\n        if not self.grad:\n            with torch.no_grad():\n                return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)\n        return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "nn.Embedding",
+      "self.pe.weight.unsqueeze",
+      "self.pe.weight.unsqueeze(0).repeat",
+      "super",
+      "super(PositionalEmbedding, self).__init__",
+      "torch.no_grad",
+      "x.size"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::Attention",
+    "file": "repo-clone/FormerTime.py",
+    "name": "Attention",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Attention"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Attention",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 20,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [
+        2,
+        1000000000.0
+      ],
+      "has_docstring": true
+    },
+    "docstring": "Compute 'Scaled Dot Product Attention",
+    "code": "class Attention(nn.Module):\n    \"\"\"\n    Compute 'Scaled Dot Product Attention\n    \"\"\"\n\n    def forward(self, query, key, value, mask=None, dropout=None):\n        scores = torch.matmul(query, key.transpose(-2, -1)) \\\n                 / math.sqrt(query.size(-1))\n\n        if mask is not None:\n            scores = scores.masked_fill(mask == 0, -1e9)\n\n        p_attn = F.softmax(scores, dim=-1)\n\n        if dropout is not None:\n            p_attn = dropout(p_attn)\n\n        # self.attn = p_attn\n\n        return torch.matmul(p_attn, value), p_attn\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "F.softmax",
+      "dropout",
+      "key.transpose",
+      "math.sqrt",
+      "query.size",
+      "scores.masked_fill",
+      "torch.matmul"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::MultiHeadAttention",
+    "file": "repo-clone/FormerTime.py",
+    "name": "MultiHeadAttention",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:MultiHeadAttention"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "MultiHeadAttention",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 38,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [
+        0.1,
+        0.5,
+        2,
+        3,
+        5000
+      ],
+      "has_docstring": true
+    },
+    "docstring": "Take in model size and number of heads.",
+    "code": "class MultiHeadAttention(nn.Module):\n    \"\"\"\n    Take in model size and number of heads.\n    \"\"\"\n\n    def __init__(self, h, d_model, dropout=0.1, tr=2, data_len=5000):\n        super(MultiHeadAttention, self).__init__()\n        assert d_model % h == 0\n\n        # We assume d_v always equals d_k\n        self.d_k = d_model // h\n        self.h = h\n        self.attention = Attention()\n        self.q = nn.Linear(d_model, d_model)\n        self.k = nn.Linear(d_model, d_model)\n        self.v = nn.Linear(d_model, d_model)\n        self.output_linear = nn.Linear(d_model, d_model)\n        self.tr = tr\n        self.scale = self.d_k ** -0.5\n        if tr > 1:\n            self.tr_layer = nn.Conv1d(data_len, data_len // tr, 1)\n            self.norm = nn.LayerNorm(d_model)\n\n        self.dropout = nn.Dropout(p=dropout)\n\n    def forward(self, x):\n        B, N, C = x.shape\n        q = self.q(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n        if self.tr > 1:\n            x_ = self.norm(self.tr_layer(x))\n            k = self.k(x_).reshape(B, -1, self.h, C // self.h).permute(0, 2, 1, 3)\n            v = self.v(x_).reshape(B, -1, self.h, C // self.h).permute(0, 2, 1, 3)\n        else:\n            k = self.k(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n            v = self.v(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n        x, attn = self.attention(q, k, v, mask=None, dropout=self.dropout)\n        x = x.transpose(1, 2).contiguous().view(B, -1, self.h * self.d_k)\n        return x\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "Attention",
+      "nn.Conv1d",
+      "nn.Dropout",
+      "nn.LayerNorm",
+      "nn.Linear",
+      "self.attention",
+      "self.k",
+      "self.k(x).reshape",
+      "self.k(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.k(x_).reshape",
+      "self.k(x_).reshape(B, -1, self.h, C // self.h).permute",
+      "self.norm",
+      "self.q",
+      "self.q(x).reshape",
+      "self.q(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.tr_layer",
+      "self.v",
+      "self.v(x).reshape",
+      "self.v(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.v(x_).reshape",
+      "self.v(x_).reshape(B, -1, self.h, C // self.h).permute",
+      "super",
+      "super(MultiHeadAttention, self).__init__",
+      "x.transpose",
+      "x.transpose(1, 2).contiguous",
+      "x.transpose(1, 2).contiguous().view"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::SublayerConnection",
+    "file": "repo-clone/FormerTime.py",
+    "name": "SublayerConnection",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:SublayerConnection"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "SublayerConnection",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 19,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [
+        1e-08,
+        0.1
+      ],
+      "has_docstring": true
+    },
+    "docstring": "A residual connection followed by a layer norm.",
+    "code": "class SublayerConnection(nn.Module):\n    \"\"\"\n    A residual connection followed by a layer norm.\n    \"\"\"\n\n    def __init__(self, size, enable_res_parameter, dropout=0.1):\n        super(SublayerConnection, self).__init__()\n        self.norm = nn.LayerNorm(size)\n        self.dropout = nn.Dropout(dropout)\n        self.enable = enable_res_parameter\n        if enable_res_parameter:\n            self.a = nn.Parameter(torch.tensor(1e-8))\n\n    def forward(self, x, sublayer):\n        \"Apply residual connection to any sublayer with the same size.\"\n        if not self.enable:\n            return self.norm(x + self.dropout(sublayer(x)))  # layer_norm\n        else:\n            return self.norm(x + self.dropout(self.a * sublayer(x)))  # layer_norm\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "nn.Dropout",
+      "nn.LayerNorm",
+      "nn.Parameter",
+      "self.dropout",
+      "self.norm",
+      "sublayer",
+      "super",
+      "super(SublayerConnection, self).__init__",
+      "torch.tensor"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::PointWiseFeedForward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "PointWiseFeedForward",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:PointWiseFeedForward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "PointWiseFeedForward",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 14,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [
+        0.1
+      ],
+      "has_docstring": true
+    },
+    "docstring": "FFN implement",
+    "code": "class PointWiseFeedForward(nn.Module):\n    \"\"\"\n    FFN implement\n    \"\"\"\n\n    def __init__(self, d_model, d_ffn, dropout=0.1):\n        super(PointWiseFeedForward, self).__init__()\n        self.linear1 = nn.Linear(d_model, d_ffn)\n        self.linear2 = nn.Linear(d_ffn, d_model)\n        self.activation = nn.GELU()\n        self.dropout = nn.Dropout(dropout)\n\n    def forward(self, x):\n        return self.dropout(self.linear2(self.activation(self.linear1(x))))\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "nn.Dropout",
+      "nn.GELU",
+      "nn.Linear",
+      "self.activation",
+      "self.dropout",
+      "self.linear1",
+      "self.linear2",
+      "super",
+      "super(PointWiseFeedForward, self).__init__"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::TransformerBlock",
+    "file": "repo-clone/FormerTime.py",
+    "name": "TransformerBlock",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:TransformerBlock"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "TransformerBlock",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 16,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [
+        0.1
+      ],
+      "has_docstring": true
+    },
+    "docstring": "TRM layer",
+    "code": "class TransformerBlock(nn.Module):\n    \"\"\"\n    TRM layer\n    \"\"\"\n\n    def __init__(self, d_model, attn_heads, d_ffn, enable_res_parameter, tr, data_len, dropout=0.1):\n        super(TransformerBlock, self).__init__()\n        self.attn = MultiHeadAttention(attn_heads, d_model, dropout, tr, data_len)\n        self.ffn = PointWiseFeedForward(d_model, d_ffn, dropout)\n        self.skipconnect1 = SublayerConnection(d_model, enable_res_parameter, dropout)\n        self.skipconnect2 = SublayerConnection(d_model, enable_res_parameter, dropout)\n\n    def forward(self, x, mask):\n        x = self.skipconnect1(x, lambda _x: self.attn.forward(_x))\n        x = self.skipconnect2(x, self.ffn)\n        return x\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "MultiHeadAttention",
+      "PointWiseFeedForward",
+      "SublayerConnection",
+      "self.attn.forward",
+      "self.skipconnect1",
+      "self.skipconnect2",
+      "super",
+      "super(TransformerBlock, self).__init__"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::Encoder",
+    "file": "repo-clone/FormerTime.py",
+    "name": "Encoder",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Encoder"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Encoder",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 58,
+      "nesting_depth": 5,
+      "cyclomatic_complexity": 16,
+      "magic_numbers": [
+        2,
+        4,
+        5
+      ],
+      "has_docstring": true
+    },
+    "docstring": "encoder in FormerTime",
+    "code": "class Encoder(nn.Module):\n    \"\"\"\n    encoder in FormerTime\n    \"\"\"\n\n    def __init__(self, slice_size, data_shape, d_encoder, attn_heads, enable_res_parameter, device, tr,\n                 stride, layers, position_location, position_type):\n        super(Encoder, self).__init__()\n        self.stride = (stride, data_shape[1])\n        self.slice_size = slice_size\n        self.data_shape = data_shape\n        self.device = device\n        self.max_len = self.data_shape[0]\n        self.position_location = position_location\n        self.position_type = position_type\n\n        self.input_projection = nn.Conv1d(self.slice_size[1], d_encoder, kernel_size=self.slice_size[0],\n                                          stride=self.stride[0])\n        self.input_norm = nn.LayerNorm(d_encoder)\n        if position_type == 'cond' or position_type == 'conv_static':\n            self.position = nn.Conv1d(d_encoder, d_encoder, kernel_size=5, padding='same')\n            self.a = nn.Parameter(torch.tensor(1.))\n        elif position_type == 'relative':\n            self.position = PositionalEmbedding(self.max_len, d_encoder)\n        else:\n            self.position = PositionalEmbedding(self.max_len, d_encoder, grad=False)\n\n        self.TRMs = nn.ModuleList([\n            TransformerBlock(d_encoder, attn_heads, 4 * d_encoder, enable_res_parameter, tr, data_shape[0]) for i in\n            range(layers)\n        ])\n\n    def forward(self, x):\n        if len(x.shape) == 4:\n            x = x.squeeze(1)\n        x = self.input_projection(x.transpose(1, 2)).transpose(1, 2)\n        x = self.input_norm(x)\n        if self.position_location == 'top':\n            if self.position_type == 'cond' or self.position_type == 'conv_static':\n                x = x.transpose(2, 1)\n                if self.position_type == 'cond':\n                    x = x + self.position(x)\n                else:\n                    with torch.no_grad():\n                        x = x + self.position(x)\n                x = x.transpose(2, 1)\n            elif self.position_type != 'none':\n                x += self.position(x)\n        for index, TRM in enumerate(self.TRMs):\n            x = TRM(x, mask=None)\n            if index == 1 and self.position_location == 'middle':\n                if self.position_type == 'cond':\n                    x = x.transpose(2, 1)\n                    x = x + self.position(x)\n                    x = x.transpose(2, 1)\n                elif self.position_type != 'none':\n                    x += self.position(x)\n        return x\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "PositionalEmbedding",
+      "TRM",
+      "TransformerBlock",
+      "enumerate",
+      "len",
+      "nn.Conv1d",
+      "nn.LayerNorm",
+      "nn.ModuleList",
+      "nn.Parameter",
+      "range",
+      "self.input_norm",
+      "self.input_projection",
+      "self.input_projection(x.transpose(1, 2)).transpose",
+      "self.position",
+      "super",
+      "super(Encoder, self).__init__",
+      "torch.no_grad",
+      "torch.tensor",
+      "x.squeeze",
+      "x.transpose"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::FormerTime",
+    "file": "repo-clone/FormerTime.py",
+    "name": "FormerTime",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:FormerTime"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 82,
+      "nesting_depth": 4,
+      "cyclomatic_complexity": 13,
+      "magic_numbers": [
+        0.1
+      ],
+      "has_docstring": true
+    },
+    "docstring": "FormerTime model",
+    "code": "class FormerTime(nn.Module):\n    \"\"\"\n    FormerTime model\n    \"\"\"\n\n    def __init__(self, args):\n        super(FormerTime, self).__init__()\n        attn_heads = args.attn_heads\n        layers = args.stages\n        enable_res_parameter = args.enable_res_parameter\n        num_class = args.num_class\n\n        self.device = args.device\n        self.position = args.position_location\n        self.pooling_type = args.pooling_type\n        self.data_shape = args.data_shape\n        self.d_encoder = args.hidden_size_per_stage\n        self.slice_sizes = [(i, j) for i, j in zip(args.slice_per_stage, [self.data_shape[1]] + self.d_encoder)]\n        self.tr = args.tr\n        self.stride = args.stride_per_stage\n        self.layer_per_stage = args.layer_per_stage\n\n        self._form_data_shape()\n        self.encs = nn.ModuleList([\n            Encoder(slice_size=self.slice_sizes[i], data_shape=self.data_shapes[i], d_encoder=self.d_encoder[i],\n                       attn_heads=attn_heads, device=self.device, enable_res_parameter=enable_res_parameter,\n                       stride=self.stride[i], tr=self.tr[i], layers=self.layer_per_stage[i],\n                       position_location=self.position, position_type=args.position_type)\n            for i in range(layers)\n        ])\n        self.output = nn.Sequential(\n            nn.Linear(self.data_shapes[-1][0] * self.d_encoder[-1], num_class),\n            # nn.Sigmoid()\n        ) if self.pooling_type == 'cat' else nn.Sequential(\n            nn.Linear(self.d_encoder[-1], num_class),\n            # nn.Sigmoid()\n        )\n\n        self.apply(self._init_weights)\n\n    def _init_weights(self, module):\n        if isinstance(module, nn.Linear):\n            xavier_normal_(module.weight.data)\n            if module.bias is not None:\n                constant_(module.bias.data, 0.1)\n\n\n    def _form_data_shape(self):\n        self.data_shapes = []\n        for i in range(len(self.tr)):\n            if not i:\n                data_shape_pre = self.data_shape\n            else:\n                data_shape_pre = self.data_shapes[-1]\n            len_raw = (data_shape_pre[0] - self.slice_sizes[i][0]) // self.stride[i] + 1\n            self.data_shapes.append(\n                (len_raw, self.d_encoder[i]))\n        print(self.data_shapes)\n\n    def forward(self, x):\n        for Encs in self.encs:\n            x = Encs(x)\n        if self.pooling_type == 'last_token':\n            return self.output(x[:, -1, :])\n        elif self.pooling_type == 'mean':\n            return self.output(torch.mean(x, dim=1))\n        elif self.pooling_type == 'cat':\n            return self.output(x.view(x.shape[0], -1))\n        else:\n            return self.output(torch.max(x, dim=1)[0])\n\n    def encode(self, x):\n        for Encs in self.encs:\n            x = Encs(x)\n        if self.pooling_type == 'last_token':\n            return x[:, -1, :]\n        elif self.pooling_type == 'mean':\n            return torch.mean(x, dim=1)\n        elif self.pooling_type == 'cat':\n            return x.view(x.shape[0], -1)\n        else:\n            return torch.max(x, dim=1)[0]\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "Encoder",
+      "Encs",
+      "constant_",
+      "isinstance",
+      "len",
+      "nn.Linear",
+      "nn.ModuleList",
+      "nn.Sequential",
+      "print",
+      "range",
+      "self._form_data_shape",
+      "self.apply",
+      "self.data_shapes.append",
+      "self.output",
+      "super",
+      "super(FormerTime, self).__init__",
+      "torch.max",
+      "torch.mean",
+      "x.view",
+      "xavier_normal_",
+      "zip"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::__init__",
+    "file": "repo-clone/FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:PositionalEmbedding",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 4,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 6,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, max_len, d_model, grad=True):\n        super(PositionalEmbedding, self).__init__()\n\n        # Compute the positional encodings once in log space.\n        self.pe = nn.Embedding(max_len, d_model)\n        self.grad = grad\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "nn.Embedding",
+      "super",
+      "super(PositionalEmbedding, self).__init__"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::forward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:PositionalEmbedding",
+      "FunctionDef:forward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 6,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def forward(self, x):\n        batch_size = x.size(0)\n        if not self.grad:\n            with torch.no_grad():\n                return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)\n        return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "self.pe.weight.unsqueeze",
+      "self.pe.weight.unsqueeze(0).repeat",
+      "torch.no_grad",
+      "x.size"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::forward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Attention",
+      "FunctionDef:forward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 6,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 15,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [
+        2,
+        1000000000.0
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def forward(self, query, key, value, mask=None, dropout=None):\n        scores = torch.matmul(query, key.transpose(-2, -1)) \\\n                 / math.sqrt(query.size(-1))\n\n        if mask is not None:\n            scores = scores.masked_fill(mask == 0, -1e9)\n\n        p_attn = F.softmax(scores, dim=-1)\n\n        if dropout is not None:\n            p_attn = dropout(p_attn)\n\n        # self.attn = p_attn\n\n        return torch.matmul(p_attn, value), p_attn\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "F.softmax",
+      "dropout",
+      "key.transpose",
+      "math.sqrt",
+      "query.size",
+      "scores.masked_fill",
+      "torch.matmul"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::__init__",
+    "file": "repo-clone/FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:MultiHeadAttention",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 6,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 19,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        0.1,
+        0.5,
+        2,
+        5000
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, h, d_model, dropout=0.1, tr=2, data_len=5000):\n        super(MultiHeadAttention, self).__init__()\n        assert d_model % h == 0\n\n        # We assume d_v always equals d_k\n        self.d_k = d_model // h\n        self.h = h\n        self.attention = Attention()\n        self.q = nn.Linear(d_model, d_model)\n        self.k = nn.Linear(d_model, d_model)\n        self.v = nn.Linear(d_model, d_model)\n        self.output_linear = nn.Linear(d_model, d_model)\n        self.tr = tr\n        self.scale = self.d_k ** -0.5\n        if tr > 1:\n            self.tr_layer = nn.Conv1d(data_len, data_len // tr, 1)\n            self.norm = nn.LayerNorm(d_model)\n\n        self.dropout = nn.Dropout(p=dropout)\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "Attention",
+      "nn.Conv1d",
+      "nn.Dropout",
+      "nn.LayerNorm",
+      "nn.Linear",
+      "super",
+      "super(MultiHeadAttention, self).__init__"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::forward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:MultiHeadAttention",
+      "FunctionDef:forward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 13,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        2,
+        3
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def forward(self, x):\n        B, N, C = x.shape\n        q = self.q(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n        if self.tr > 1:\n            x_ = self.norm(self.tr_layer(x))\n            k = self.k(x_).reshape(B, -1, self.h, C // self.h).permute(0, 2, 1, 3)\n            v = self.v(x_).reshape(B, -1, self.h, C // self.h).permute(0, 2, 1, 3)\n        else:\n            k = self.k(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n            v = self.v(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n        x, attn = self.attention(q, k, v, mask=None, dropout=self.dropout)\n        x = x.transpose(1, 2).contiguous().view(B, -1, self.h * self.d_k)\n        return x\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "self.attention",
+      "self.k",
+      "self.k(x).reshape",
+      "self.k(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.k(x_).reshape",
+      "self.k(x_).reshape(B, -1, self.h, C // self.h).permute",
+      "self.norm",
+      "self.q",
+      "self.q(x).reshape",
+      "self.q(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.tr_layer",
+      "self.v",
+      "self.v(x).reshape",
+      "self.v(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.v(x_).reshape",
+      "self.v(x_).reshape(B, -1, self.h, C // self.h).permute",
+      "x.transpose",
+      "x.transpose(1, 2).contiguous",
+      "x.transpose(1, 2).contiguous().view"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::__init__",
+    "file": "repo-clone/FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:SublayerConnection",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 4,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 7,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        1e-08,
+        0.1
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, size, enable_res_parameter, dropout=0.1):\n        super(SublayerConnection, self).__init__()\n        self.norm = nn.LayerNorm(size)\n        self.dropout = nn.Dropout(dropout)\n        self.enable = enable_res_parameter\n        if enable_res_parameter:\n            self.a = nn.Parameter(torch.tensor(1e-8))\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "nn.Dropout",
+      "nn.LayerNorm",
+      "nn.Parameter",
+      "super",
+      "super(SublayerConnection, self).__init__",
+      "torch.tensor"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::forward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:SublayerConnection",
+      "FunctionDef:forward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 3,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 6,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [],
+      "has_docstring": true
+    },
+    "docstring": "Apply residual connection to any sublayer with the same size.",
+    "code": "    def forward(self, x, sublayer):\n        \"Apply residual connection to any sublayer with the same size.\"\n        if not self.enable:\n            return self.norm(x + self.dropout(sublayer(x)))  # layer_norm\n        else:\n            return self.norm(x + self.dropout(self.a * sublayer(x)))  # layer_norm\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "self.dropout",
+      "self.norm",
+      "sublayer"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::__init__",
+    "file": "repo-clone/FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:PointWiseFeedForward",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 4,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 6,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [
+        0.1
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, d_model, d_ffn, dropout=0.1):\n        super(PointWiseFeedForward, self).__init__()\n        self.linear1 = nn.Linear(d_model, d_ffn)\n        self.linear2 = nn.Linear(d_ffn, d_model)\n        self.activation = nn.GELU()\n        self.dropout = nn.Dropout(dropout)\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "nn.Dropout",
+      "nn.GELU",
+      "nn.Linear",
+      "super",
+      "super(PointWiseFeedForward, self).__init__"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::forward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:PointWiseFeedForward",
+      "FunctionDef:forward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def forward(self, x):\n        return self.dropout(self.linear2(self.activation(self.linear1(x))))\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "self.activation",
+      "self.dropout",
+      "self.linear1",
+      "self.linear2"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::__init__",
+    "file": "repo-clone/FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:TransformerBlock",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 8,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 6,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [
+        0.1
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, d_model, attn_heads, d_ffn, enable_res_parameter, tr, data_len, dropout=0.1):\n        super(TransformerBlock, self).__init__()\n        self.attn = MultiHeadAttention(attn_heads, d_model, dropout, tr, data_len)\n        self.ffn = PointWiseFeedForward(d_model, d_ffn, dropout)\n        self.skipconnect1 = SublayerConnection(d_model, enable_res_parameter, dropout)\n        self.skipconnect2 = SublayerConnection(d_model, enable_res_parameter, dropout)\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "MultiHeadAttention",
+      "PointWiseFeedForward",
+      "SublayerConnection",
+      "super",
+      "super(TransformerBlock, self).__init__"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::forward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:TransformerBlock",
+      "FunctionDef:forward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 3,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 4,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def forward(self, x, mask):\n        x = self.skipconnect1(x, lambda _x: self.attn.forward(_x))\n        x = self.skipconnect2(x, self.ffn)\n        return x\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "self.attn.forward",
+      "self.skipconnect1",
+      "self.skipconnect2"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::__init__",
+    "file": "repo-clone/FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Encoder",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 12,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 26,
+      "nesting_depth": 3,
+      "cyclomatic_complexity": 4,
+      "magic_numbers": [
+        4,
+        5
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, slice_size, data_shape, d_encoder, attn_heads, enable_res_parameter, device, tr,\n                 stride, layers, position_location, position_type):\n        super(Encoder, self).__init__()\n        self.stride = (stride, data_shape[1])\n        self.slice_size = slice_size\n        self.data_shape = data_shape\n        self.device = device\n        self.max_len = self.data_shape[0]\n        self.position_location = position_location\n        self.position_type = position_type\n\n        self.input_projection = nn.Conv1d(self.slice_size[1], d_encoder, kernel_size=self.slice_size[0],\n                                          stride=self.stride[0])\n        self.input_norm = nn.LayerNorm(d_encoder)\n        if position_type == 'cond' or position_type == 'conv_static':\n            self.position = nn.Conv1d(d_encoder, d_encoder, kernel_size=5, padding='same')\n            self.a = nn.Parameter(torch.tensor(1.))\n        elif position_type == 'relative':\n            self.position = PositionalEmbedding(self.max_len, d_encoder)\n        else:\n            self.position = PositionalEmbedding(self.max_len, d_encoder, grad=False)\n\n        self.TRMs = nn.ModuleList([\n            TransformerBlock(d_encoder, attn_heads, 4 * d_encoder, enable_res_parameter, tr, data_shape[0]) for i in\n            range(layers)\n        ])\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "PositionalEmbedding",
+      "TransformerBlock",
+      "nn.Conv1d",
+      "nn.LayerNorm",
+      "nn.ModuleList",
+      "nn.Parameter",
+      "range",
+      "super",
+      "super(Encoder, self).__init__",
+      "torch.tensor"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::forward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Encoder",
+      "FunctionDef:forward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 26,
+      "nesting_depth": 5,
+      "cyclomatic_complexity": 13,
+      "magic_numbers": [
+        2,
+        4
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def forward(self, x):\n        if len(x.shape) == 4:\n            x = x.squeeze(1)\n        x = self.input_projection(x.transpose(1, 2)).transpose(1, 2)\n        x = self.input_norm(x)\n        if self.position_location == 'top':\n            if self.position_type == 'cond' or self.position_type == 'conv_static':\n                x = x.transpose(2, 1)\n                if self.position_type == 'cond':\n                    x = x + self.position(x)\n                else:\n                    with torch.no_grad():\n                        x = x + self.position(x)\n                x = x.transpose(2, 1)\n            elif self.position_type != 'none':\n                x += self.position(x)\n        for index, TRM in enumerate(self.TRMs):\n            x = TRM(x, mask=None)\n            if index == 1 and self.position_location == 'middle':\n                if self.position_type == 'cond':\n                    x = x.transpose(2, 1)\n                    x = x + self.position(x)\n                    x = x.transpose(2, 1)\n                elif self.position_type != 'none':\n                    x += self.position(x)\n        return x\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "TRM",
+      "enumerate",
+      "len",
+      "self.input_norm",
+      "self.input_projection",
+      "self.input_projection(x.transpose(1, 2)).transpose",
+      "self.position",
+      "torch.no_grad",
+      "x.squeeze",
+      "x.transpose"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::__init__",
+    "file": "repo-clone/FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:FormerTime",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 34,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, args):\n        super(FormerTime, self).__init__()\n        attn_heads = args.attn_heads\n        layers = args.stages\n        enable_res_parameter = args.enable_res_parameter\n        num_class = args.num_class\n\n        self.device = args.device\n        self.position = args.position_location\n        self.pooling_type = args.pooling_type\n        self.data_shape = args.data_shape\n        self.d_encoder = args.hidden_size_per_stage\n        self.slice_sizes = [(i, j) for i, j in zip(args.slice_per_stage, [self.data_shape[1]] + self.d_encoder)]\n        self.tr = args.tr\n        self.stride = args.stride_per_stage\n        self.layer_per_stage = args.layer_per_stage\n\n        self._form_data_shape()\n        self.encs = nn.ModuleList([\n            Encoder(slice_size=self.slice_sizes[i], data_shape=self.data_shapes[i], d_encoder=self.d_encoder[i],\n                       attn_heads=attn_heads, device=self.device, enable_res_parameter=enable_res_parameter,\n                       stride=self.stride[i], tr=self.tr[i], layers=self.layer_per_stage[i],\n                       position_location=self.position, position_type=args.position_type)\n            for i in range(layers)\n        ])\n        self.output = nn.Sequential(\n            nn.Linear(self.data_shapes[-1][0] * self.d_encoder[-1], num_class),\n            # nn.Sigmoid()\n        ) if self.pooling_type == 'cat' else nn.Sequential(\n            nn.Linear(self.d_encoder[-1], num_class),\n            # nn.Sigmoid()\n        )\n\n        self.apply(self._init_weights)\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "Encoder",
+      "nn.Linear",
+      "nn.ModuleList",
+      "nn.Sequential",
+      "range",
+      "self._form_data_shape",
+      "self.apply",
+      "super",
+      "super(FormerTime, self).__init__",
+      "zip"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::_init_weights",
+    "file": "repo-clone/FormerTime.py",
+    "name": "_init_weights",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:FormerTime",
+      "FunctionDef:_init_weights"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 5,
+      "nesting_depth": 3,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [
+        0.1
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def _init_weights(self, module):\n        if isinstance(module, nn.Linear):\n            xavier_normal_(module.weight.data)\n            if module.bias is not None:\n                constant_(module.bias.data, 0.1)\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "constant_",
+      "isinstance",
+      "xavier_normal_"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::_form_data_shape",
+    "file": "repo-clone/FormerTime.py",
+    "name": "_form_data_shape",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:FormerTime",
+      "FunctionDef:_form_data_shape"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 11,
+      "nesting_depth": 3,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def _form_data_shape(self):\n        self.data_shapes = []\n        for i in range(len(self.tr)):\n            if not i:\n                data_shape_pre = self.data_shape\n            else:\n                data_shape_pre = self.data_shapes[-1]\n            len_raw = (data_shape_pre[0] - self.slice_sizes[i][0]) // self.stride[i] + 1\n            self.data_shapes.append(\n                (len_raw, self.d_encoder[i]))\n        print(self.data_shapes)\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "len",
+      "print",
+      "range",
+      "self.data_shapes.append"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::forward",
+    "file": "repo-clone/FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:FormerTime",
+      "FunctionDef:forward"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 11,
+      "nesting_depth": 4,
+      "cyclomatic_complexity": 5,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def forward(self, x):\n        for Encs in self.encs:\n            x = Encs(x)\n        if self.pooling_type == 'last_token':\n            return self.output(x[:, -1, :])\n        elif self.pooling_type == 'mean':\n            return self.output(torch.mean(x, dim=1))\n        elif self.pooling_type == 'cat':\n            return self.output(x.view(x.shape[0], -1))\n        else:\n            return self.output(torch.max(x, dim=1)[0])\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "Encs",
+      "self.output",
+      "torch.max",
+      "torch.mean",
+      "x.view"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/FormerTime.py::encode",
+    "file": "repo-clone/FormerTime.py",
+    "name": "encode",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:FormerTime",
+      "FunctionDef:encode"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "FormerTime",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 11,
+      "nesting_depth": 4,
+      "cyclomatic_complexity": 5,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def encode(self, x):\n        for Encs in self.encs:\n            x = Encs(x)\n        if self.pooling_type == 'last_token':\n            return x[:, -1, :]\n        elif self.pooling_type == 'mean':\n            return torch.mean(x, dim=1)\n        elif self.pooling_type == 'cat':\n            return x.view(x.shape[0], -1)\n        else:\n            return torch.max(x, dim=1)[0]\n",
+    "comments": [
+      "Compute the positional encodings once in log space.",
+      "self.attn = p_attn",
+      "We assume d_v always equals d_k",
+      "layer_norm",
+      "layer_norm",
+      "nn.Sigmoid()",
+      "nn.Sigmoid()"
+    ],
+    "dependencies": [
+      "Encs",
+      "torch.max",
+      "torch.mean",
+      "x.view"
+    ],
+    "imports": [
+      "math",
+      "numpy",
+      "torch",
+      "torch.nn",
+      "torch.nn.functional",
+      "torch.nn.init.constant_",
+      "torch.nn.init.uniform_",
+      "torch.nn.init.xavier_normal_"
+    ]
+  },
+  {
+    "id": "repo-clone/loss.py::CE",
+    "file": "repo-clone/loss.py",
+    "name": "CE",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:CE"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "CE",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 11,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class CE:\n    def __init__(self, model):\n        self.model = model\n        self.ce = nn.CrossEntropyLoss()\n\n    def compute(self, batch):\n        seqs, labels = batch\n        outputs = self.model(seqs)  # B * N\n        labels = labels.view(-1).long()\n        loss = self.ce(outputs, labels)\n        return loss\n",
+    "comments": [
+      "B * N",
+      "B * N"
+    ],
+    "dependencies": [
+      "labels.view",
+      "labels.view(-1).long",
+      "nn.CrossEntropyLoss",
+      "self.ce",
+      "self.model"
+    ],
+    "imports": [
+      "torch",
+      "torch.nn"
+    ]
+  },
+  {
+    "id": "repo-clone/loss.py::BCE",
+    "file": "repo-clone/loss.py",
+    "name": "BCE",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:BCE"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "BCE",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 12,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class BCE:\n    def __init__(self, model):\n        self.model = model\n        self.bce = nn.BCELoss(reduction='none')\n\n    def compute(self, batch):\n        seqs, labels = batch\n        outputs = self.model(seqs)  # B * N\n        weight = torch.ones(outputs.shape[0]).float().to(outputs.device)\n        loss = self.bce(outputs.view(-1), labels.float())\n        loss = torch.mean(weight * loss)\n        return loss\n",
+    "comments": [
+      "B * N",
+      "B * N"
+    ],
+    "dependencies": [
+      "labels.float",
+      "nn.BCELoss",
+      "outputs.view",
+      "self.bce",
+      "self.model",
+      "torch.mean",
+      "torch.ones",
+      "torch.ones(outputs.shape[0]).float",
+      "torch.ones(outputs.shape[0]).float().to"
+    ],
+    "imports": [
+      "torch",
+      "torch.nn"
+    ]
+  },
+  {
+    "id": "repo-clone/loss.py::__init__",
+    "file": "repo-clone/loss.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:CE",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "BCE",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 3,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, model):\n        self.model = model\n        self.ce = nn.CrossEntropyLoss()\n",
+    "comments": [
+      "B * N",
+      "B * N"
+    ],
+    "dependencies": [
+      "nn.CrossEntropyLoss"
+    ],
+    "imports": [
+      "torch",
+      "torch.nn"
+    ]
+  },
+  {
+    "id": "repo-clone/loss.py::compute",
+    "file": "repo-clone/loss.py",
+    "name": "compute",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:CE",
+      "FunctionDef:compute"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "BCE",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 6,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def compute(self, batch):\n        seqs, labels = batch\n        outputs = self.model(seqs)  # B * N\n        labels = labels.view(-1).long()\n        loss = self.ce(outputs, labels)\n        return loss\n",
+    "comments": [
+      "B * N",
+      "B * N"
+    ],
+    "dependencies": [
+      "labels.view",
+      "labels.view(-1).long",
+      "self.ce",
+      "self.model"
+    ],
+    "imports": [
+      "torch",
+      "torch.nn"
+    ]
+  },
+  {
+    "id": "repo-clone/loss.py::__init__",
+    "file": "repo-clone/loss.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:BCE",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "BCE",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 3,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, model):\n        self.model = model\n        self.bce = nn.BCELoss(reduction='none')\n",
+    "comments": [
+      "B * N",
+      "B * N"
+    ],
+    "dependencies": [
+      "nn.BCELoss"
+    ],
+    "imports": [
+      "torch",
+      "torch.nn"
+    ]
+  },
+  {
+    "id": "repo-clone/loss.py::compute",
+    "file": "repo-clone/loss.py",
+    "name": "compute",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:BCE",
+      "FunctionDef:compute"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "BCE",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 7,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def compute(self, batch):\n        seqs, labels = batch\n        outputs = self.model(seqs)  # B * N\n        weight = torch.ones(outputs.shape[0]).float().to(outputs.device)\n        loss = self.bce(outputs.view(-1), labels.float())\n        loss = torch.mean(weight * loss)\n        return loss\n",
+    "comments": [
+      "B * N",
+      "B * N"
+    ],
+    "dependencies": [
+      "labels.float",
+      "outputs.view",
+      "self.bce",
+      "self.model",
+      "torch.mean",
+      "torch.ones",
+      "torch.ones(outputs.shape[0]).float",
+      "torch.ones(outputs.shape[0]).float().to"
+    ],
+    "imports": [
+      "torch",
+      "torch.nn"
+    ]
+  },
+  {
+    "id": "repo-clone/main.py::main",
+    "file": "repo-clone/main.py",
+    "name": "main",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "FunctionDef:main"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 16,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [
+        6
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "def main():\n    torch.set_num_threads(6)\n    train_dataset = Dataset(device=args.device, mode='train')\n    train_loader = Data.DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)\n    args.data_shape = train_dataset.shape()\n    test_dataset = Dataset(device=args.device, mode='test')\n    test_loader = Data.DataLoader(test_dataset, batch_size=args.test_batch_size)\n\n    print(args.data_shape)\n    print('dataset initial ends')\n\n    model = FormerTime(args)\n\n    print('model initial ends')\n    trainer = Trainer(args, model, train_loader, test_loader, verbose=True)\n    trainer.train()\n",
+    "comments": [],
+    "dependencies": [
+      "Data.DataLoader",
+      "Dataset",
+      "FormerTime",
+      "Trainer",
+      "print",
+      "torch.set_num_threads",
+      "train_dataset.shape",
+      "trainer.train"
+    ],
+    "imports": [
+      "FormerTime.FormerTime",
+      "args.args",
+      "dataset.Dataset",
+      "json",
+      "process.Trainer",
+      "torch",
+      "torch.utils.data",
+      "warnings"
+    ]
+  },
+  {
+    "id": "repo-clone/process.py::Trainer",
+    "file": "repo-clone/process.py",
+    "name": "Trainer",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Trainer"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Trainer",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 145,
+      "nesting_depth": 5,
+      "cyclomatic_complexity": 17,
+      "magic_numbers": [
+        2,
+        5,
+        1000000000.0
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class Trainer():\n    def __init__(self, args, model, train_loader, test_loader, verbose=False):\n        self.args = args\n        self.verbose = verbose\n        self.device = args.device\n        self.print_process(self.device)\n        self.model = model.to(torch.device(self.device))\n\n        self.train_loader = train_loader\n        self.test_loader = test_loader\n        self.lr_decay = args.lr_decay_rate\n        self.lr_decay_steps = args.lr_decay_steps\n\n        self.cr = CE(self.model) if args.loss == 'ce' else BCE(self.model)\n\n        self.test_cr = torch.nn.CrossEntropyLoss() if args.loss == 'ce' else torch.nn.BCELoss()\n        self.num_epoch = args.num_epoch\n        self.eval_per_steps = args.eval_per_steps\n        self.save_path = args.save_path\n        if self.num_epoch:\n            self.result_file = open(self.save_path + '/result.txt', 'w')\n            self.result_file.close()\n\n        self.step = 0\n        self.best_metric = -1e9\n        self.metric = 'acc'\n\n    def train(self):\n        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.args.lr)\n        self.scheduler = LambdaLR(self.optimizer, lr_lambda=lambda step: self.lr_decay ** step, verbose=self.verbose)\n        for epoch in range(self.num_epoch):\n            loss_epoch, time_cost = self._train_one_epoch()\n            self.result_file = open(self.save_path + '/result.txt', 'a+')\n            self.print_process(\n                'Model train epoch:{0},loss:{1},training_time:{2}'.format(epoch + 1, loss_epoch, time_cost))\n            print('Model train epoch:{0},loss:{1},training_time:{2}'.format(epoch + 1, loss_epoch, time_cost),\n                  file=self.result_file)\n            self.result_file.close()\n        self.print_process(self.best_metric)\n        return self.best_metric\n\n    def _train_one_epoch(self):\n        t0 = time.perf_counter()\n        self.model.train()\n        tqdm_dataloader = tqdm(self.train_loader) if self.verbose else self.train_loader\n\n        loss_sum = 0\n        for idx, batch in enumerate(tqdm_dataloader):\n            batch = [x.to(self.device) for x in batch]\n\n            self.optimizer.zero_grad()\n            loss = self.cr.compute(batch)\n            loss_sum += loss.item()\n\n            loss.backward()\n            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5)\n            self.optimizer.step()\n\n            self.step += 1\n            if self.step % self.lr_decay_steps == 0:\n                self.scheduler.step()\n            if self.step % self.eval_per_steps == 0:\n                metric = self.eval_model()\n                self.print_process(metric)\n                self.result_file = open(self.save_path + '/result.txt', 'a+')\n                print('step{0}'.format(self.step), file=self.result_file)\n                print(metric, file=self.result_file)\n                self.result_file.close()\n                if metric[self.metric] >= self.best_metric:\n                    if self.args.save_model:\n                        torch.save(self.model.state_dict(), self.save_path + '/model.pkl')\n                    self.result_file = open(self.save_path + '/result.txt', 'a+')\n                    print('saving model of step{0}'.format(self.step), file=self.result_file)\n                    self.result_file.close()\n                    self.best_metric = metric[self.metric]\n                self.model.train()\n\n        return loss_sum / (idx + 1), time.perf_counter() - t0\n\n    def eval_model(self):\n        self.model.eval()\n        tqdm_data_loader = tqdm(self.test_loader) if self.verbose else self.test_loader\n        metrics = {'acc': 0, 'f1': 0}\n        pred = []\n        label = []\n        test_loss = 0\n\n        with torch.no_grad():\n            for idx, batch in enumerate(tqdm_data_loader):\n                batch = [x.to(self.device) for x in batch]\n                ret = self.compute_metrics(batch)\n                if len(ret) == 2:\n                    pred_b, label_b = ret\n                    pred += pred_b\n                    label += label_b\n                else:\n                    pred_b, label_b, test_loss_b = ret\n                    pred += pred_b\n                    label += label_b\n                    test_loss += test_loss_b.cpu().item()\n        confusion_mat = self._confusion_mat(label, pred)\n        self.print_process(confusion_mat)\n        self.result_file = open(self.save_path + '/result.txt', 'a+')\n        print(confusion_mat, file=self.result_file)\n        self.result_file.close()\n        if self.args.num_class == 2:\n            metrics['f1'] = f1_score(y_true=label, y_pred=pred)\n            metrics['precision'] = precision_score(y_true=label, y_pred=pred)\n            metrics['recall'] = recall_score(y_true=label, y_pred=pred)\n        else:\n            metrics['f1'] = f1_score(y_true=label, y_pred=pred, average='macro')\n            metrics['micro_f1'] = f1_score(y_true=label, y_pred=pred, average='micro')\n        metrics['acc'] = accuracy_score(y_true=label, y_pred=pred)\n        metrics['test_loss'] = test_loss / (idx + 1)\n        return metrics\n\n    def compute_metrics(self, batch):\n        if len(batch) == 2:\n            seqs, label = batch\n            scores = self.model(seqs)\n        else:\n            seqs1, seqs2, label = batch\n            scores = self.model((seqs1, seqs2))\n        if self.args.loss == 'ce':\n            _, pred = torch.topk(scores, 1)\n            test_loss = self.test_cr(scores, label.view(-1).long())\n            pred = pred.view(-1).tolist()\n            return pred, label.tolist(), test_loss\n        else:\n            pred = (scores > self.threshold).int().view(-1).tolist()\n            test_loss = self.test_cr(scores.view(-1), label.view(-1).float())\n            return pred, label.tolist(), test_loss\n\n    def _confusion_mat(self, label, pred):\n        if self.args.loss == 'ce':\n            mat = np.zeros((self.args.num_class, self.args.num_class))\n        else:\n            mat = np.zeros((2, 2))\n        for _label, _pred in zip(label, pred):\n            mat[_label, _pred] += 1\n        return mat\n\n    def print_process(self, *x):\n        if self.verbose:\n            print(*x)\n",
+    "comments": [],
+    "dependencies": [
+      "'Model train epoch:{0},loss:{1},training_time:{2}'.format",
+      "'saving model of step{0}'.format",
+      "'step{0}'.format",
+      "(scores > self.threshold).int",
+      "(scores > self.threshold).int().view",
+      "(scores > self.threshold).int().view(-1).tolist",
+      "BCE",
+      "CE",
+      "LambdaLR",
+      "accuracy_score",
+      "enumerate",
+      "f1_score",
+      "label.tolist",
+      "label.view",
+      "label.view(-1).float",
+      "label.view(-1).long",
+      "len",
+      "loss.backward",
+      "loss.item",
+      "model.to",
+      "np.zeros",
+      "open",
+      "precision_score",
+      "pred.view",
+      "pred.view(-1).tolist",
+      "print",
+      "range",
+      "recall_score",
+      "scores.view",
+      "self._confusion_mat",
+      "self._train_one_epoch",
+      "self.compute_metrics",
+      "self.cr.compute",
+      "self.eval_model",
+      "self.model",
+      "self.model.eval",
+      "self.model.parameters",
+      "self.model.state_dict",
+      "self.model.train",
+      "self.optimizer.step",
+      "self.optimizer.zero_grad",
+      "self.print_process",
+      "self.result_file.close",
+      "self.scheduler.step",
+      "self.test_cr",
+      "test_loss_b.cpu",
+      "test_loss_b.cpu().item",
+      "time.perf_counter",
+      "torch.device",
+      "torch.nn.BCELoss",
+      "torch.nn.CrossEntropyLoss",
+      "torch.nn.utils.clip_grad_norm_",
+      "torch.no_grad",
+      "torch.optim.AdamW",
+      "torch.save",
+      "torch.topk",
+      "tqdm",
+      "x.to",
+      "zip"
+    ],
+    "imports": [
+      "loss.BCE",
+      "loss.CE",
+      "numpy",
+      "sklearn.metrics.accuracy_score",
+      "sklearn.metrics.f1_score",
+      "sklearn.metrics.precision_score",
+      "sklearn.metrics.recall_score",
+      "time",
+      "torch",
+      "torch.optim.lr_scheduler.LambdaLR",
+      "tqdm.tqdm"
+    ]
+  },
+  {
+    "id": "repo-clone/process.py::__init__",
+    "file": "repo-clone/process.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Trainer",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Trainer",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 6,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 25,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        1000000000.0
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, args, model, train_loader, test_loader, verbose=False):\n        self.args = args\n        self.verbose = verbose\n        self.device = args.device\n        self.print_process(self.device)\n        self.model = model.to(torch.device(self.device))\n\n        self.train_loader = train_loader\n        self.test_loader = test_loader\n        self.lr_decay = args.lr_decay_rate\n        self.lr_decay_steps = args.lr_decay_steps\n\n        self.cr = CE(self.model) if args.loss == 'ce' else BCE(self.model)\n\n        self.test_cr = torch.nn.CrossEntropyLoss() if args.loss == 'ce' else torch.nn.BCELoss()\n        self.num_epoch = args.num_epoch\n        self.eval_per_steps = args.eval_per_steps\n        self.save_path = args.save_path\n        if self.num_epoch:\n            self.result_file = open(self.save_path + '/result.txt', 'w')\n            self.result_file.close()\n\n        self.step = 0\n        self.best_metric = -1e9\n        self.metric = 'acc'\n",
+    "comments": [],
+    "dependencies": [
+      "BCE",
+      "CE",
+      "model.to",
+      "open",
+      "self.print_process",
+      "self.result_file.close",
+      "torch.device",
+      "torch.nn.BCELoss",
+      "torch.nn.CrossEntropyLoss"
+    ],
+    "imports": [
+      "loss.BCE",
+      "loss.CE",
+      "numpy",
+      "sklearn.metrics.accuracy_score",
+      "sklearn.metrics.f1_score",
+      "sklearn.metrics.precision_score",
+      "sklearn.metrics.recall_score",
+      "time",
+      "torch",
+      "torch.optim.lr_scheduler.LambdaLR",
+      "tqdm.tqdm"
+    ]
+  },
+  {
+    "id": "repo-clone/process.py::train",
+    "file": "repo-clone/process.py",
+    "name": "train",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Trainer",
+      "FunctionDef:train"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Trainer",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 13,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def train(self):\n        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.args.lr)\n        self.scheduler = LambdaLR(self.optimizer, lr_lambda=lambda step: self.lr_decay ** step, verbose=self.verbose)\n        for epoch in range(self.num_epoch):\n            loss_epoch, time_cost = self._train_one_epoch()\n            self.result_file = open(self.save_path + '/result.txt', 'a+')\n            self.print_process(\n                'Model train epoch:{0},loss:{1},training_time:{2}'.format(epoch + 1, loss_epoch, time_cost))\n            print('Model train epoch:{0},loss:{1},training_time:{2}'.format(epoch + 1, loss_epoch, time_cost),\n                  file=self.result_file)\n            self.result_file.close()\n        self.print_process(self.best_metric)\n        return self.best_metric\n",
+    "comments": [],
+    "dependencies": [
+      "'Model train epoch:{0},loss:{1},training_time:{2}'.format",
+      "LambdaLR",
+      "open",
+      "print",
+      "range",
+      "self._train_one_epoch",
+      "self.model.parameters",
+      "self.print_process",
+      "self.result_file.close",
+      "torch.optim.AdamW"
+    ],
+    "imports": [
+      "loss.BCE",
+      "loss.CE",
+      "numpy",
+      "sklearn.metrics.accuracy_score",
+      "sklearn.metrics.f1_score",
+      "sklearn.metrics.precision_score",
+      "sklearn.metrics.recall_score",
+      "time",
+      "torch",
+      "torch.optim.lr_scheduler.LambdaLR",
+      "tqdm.tqdm"
+    ]
+  },
+  {
+    "id": "repo-clone/process.py::_train_one_epoch",
+    "file": "repo-clone/process.py",
+    "name": "_train_one_epoch",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Trainer",
+      "FunctionDef:_train_one_epoch"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Trainer",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 37,
+      "nesting_depth": 5,
+      "cyclomatic_complexity": 6,
+      "magic_numbers": [
+        5
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def _train_one_epoch(self):\n        t0 = time.perf_counter()\n        self.model.train()\n        tqdm_dataloader = tqdm(self.train_loader) if self.verbose else self.train_loader\n\n        loss_sum = 0\n        for idx, batch in enumerate(tqdm_dataloader):\n            batch = [x.to(self.device) for x in batch]\n\n            self.optimizer.zero_grad()\n            loss = self.cr.compute(batch)\n            loss_sum += loss.item()\n\n            loss.backward()\n            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5)\n            self.optimizer.step()\n\n            self.step += 1\n            if self.step % self.lr_decay_steps == 0:\n                self.scheduler.step()\n            if self.step % self.eval_per_steps == 0:\n                metric = self.eval_model()\n                self.print_process(metric)\n                self.result_file = open(self.save_path + '/result.txt', 'a+')\n                print('step{0}'.format(self.step), file=self.result_file)\n                print(metric, file=self.result_file)\n                self.result_file.close()\n                if metric[self.metric] >= self.best_metric:\n                    if self.args.save_model:\n                        torch.save(self.model.state_dict(), self.save_path + '/model.pkl')\n                    self.result_file = open(self.save_path + '/result.txt', 'a+')\n                    print('saving model of step{0}'.format(self.step), file=self.result_file)\n                    self.result_file.close()\n                    self.best_metric = metric[self.metric]\n                self.model.train()\n\n        return loss_sum / (idx + 1), time.perf_counter() - t0\n",
+    "comments": [],
+    "dependencies": [
+      "'saving model of step{0}'.format",
+      "'step{0}'.format",
+      "enumerate",
+      "loss.backward",
+      "loss.item",
+      "open",
+      "print",
+      "self.cr.compute",
+      "self.eval_model",
+      "self.model.parameters",
+      "self.model.state_dict",
+      "self.model.train",
+      "self.optimizer.step",
+      "self.optimizer.zero_grad",
+      "self.print_process",
+      "self.result_file.close",
+      "self.scheduler.step",
+      "time.perf_counter",
+      "torch.nn.utils.clip_grad_norm_",
+      "torch.save",
+      "tqdm",
+      "x.to"
+    ],
+    "imports": [
+      "loss.BCE",
+      "loss.CE",
+      "numpy",
+      "sklearn.metrics.accuracy_score",
+      "sklearn.metrics.f1_score",
+      "sklearn.metrics.precision_score",
+      "sklearn.metrics.recall_score",
+      "time",
+      "torch",
+      "torch.optim.lr_scheduler.LambdaLR",
+      "tqdm.tqdm"
+    ]
+  },
+  {
+    "id": "repo-clone/process.py::eval_model",
+    "file": "repo-clone/process.py",
+    "name": "eval_model",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Trainer",
+      "FunctionDef:eval_model"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Trainer",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 36,
+      "nesting_depth": 3,
+      "cyclomatic_complexity": 5,
+      "magic_numbers": [
+        2
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def eval_model(self):\n        self.model.eval()\n        tqdm_data_loader = tqdm(self.test_loader) if self.verbose else self.test_loader\n        metrics = {'acc': 0, 'f1': 0}\n        pred = []\n        label = []\n        test_loss = 0\n\n        with torch.no_grad():\n            for idx, batch in enumerate(tqdm_data_loader):\n                batch = [x.to(self.device) for x in batch]\n                ret = self.compute_metrics(batch)\n                if len(ret) == 2:\n                    pred_b, label_b = ret\n                    pred += pred_b\n                    label += label_b\n                else:\n                    pred_b, label_b, test_loss_b = ret\n                    pred += pred_b\n                    label += label_b\n                    test_loss += test_loss_b.cpu().item()\n        confusion_mat = self._confusion_mat(label, pred)\n        self.print_process(confusion_mat)\n        self.result_file = open(self.save_path + '/result.txt', 'a+')\n        print(confusion_mat, file=self.result_file)\n        self.result_file.close()\n        if self.args.num_class == 2:\n            metrics['f1'] = f1_score(y_true=label, y_pred=pred)\n            metrics['precision'] = precision_score(y_true=label, y_pred=pred)\n            metrics['recall'] = recall_score(y_true=label, y_pred=pred)\n        else:\n            metrics['f1'] = f1_score(y_true=label, y_pred=pred, average='macro')\n            metrics['micro_f1'] = f1_score(y_true=label, y_pred=pred, average='micro')\n        metrics['acc'] = accuracy_score(y_true=label, y_pred=pred)\n        metrics['test_loss'] = test_loss / (idx + 1)\n        return metrics\n",
+    "comments": [],
+    "dependencies": [
+      "accuracy_score",
+      "enumerate",
+      "f1_score",
+      "len",
+      "open",
+      "precision_score",
+      "print",
+      "recall_score",
+      "self._confusion_mat",
+      "self.compute_metrics",
+      "self.model.eval",
+      "self.print_process",
+      "self.result_file.close",
+      "test_loss_b.cpu",
+      "test_loss_b.cpu().item",
+      "torch.no_grad",
+      "tqdm",
+      "x.to"
+    ],
+    "imports": [
+      "loss.BCE",
+      "loss.CE",
+      "numpy",
+      "sklearn.metrics.accuracy_score",
+      "sklearn.metrics.f1_score",
+      "sklearn.metrics.precision_score",
+      "sklearn.metrics.recall_score",
+      "time",
+      "torch",
+      "torch.optim.lr_scheduler.LambdaLR",
+      "tqdm.tqdm"
+    ]
+  },
+  {
+    "id": "repo-clone/process.py::compute_metrics",
+    "file": "repo-clone/process.py",
+    "name": "compute_metrics",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Trainer",
+      "FunctionDef:compute_metrics"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Trainer",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 16,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [
+        2
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def compute_metrics(self, batch):\n        if len(batch) == 2:\n            seqs, label = batch\n            scores = self.model(seqs)\n        else:\n            seqs1, seqs2, label = batch\n            scores = self.model((seqs1, seqs2))\n        if self.args.loss == 'ce':\n            _, pred = torch.topk(scores, 1)\n            test_loss = self.test_cr(scores, label.view(-1).long())\n            pred = pred.view(-1).tolist()\n            return pred, label.tolist(), test_loss\n        else:\n            pred = (scores > self.threshold).int().view(-1).tolist()\n            test_loss = self.test_cr(scores.view(-1), label.view(-1).float())\n            return pred, label.tolist(), test_loss\n",
+    "comments": [],
+    "dependencies": [
+      "(scores > self.threshold).int",
+      "(scores > self.threshold).int().view",
+      "(scores > self.threshold).int().view(-1).tolist",
+      "label.tolist",
+      "label.view",
+      "label.view(-1).float",
+      "label.view(-1).long",
+      "len",
+      "pred.view",
+      "pred.view(-1).tolist",
+      "scores.view",
+      "self.model",
+      "self.test_cr",
+      "torch.topk"
+    ],
+    "imports": [
+      "loss.BCE",
+      "loss.CE",
+      "numpy",
+      "sklearn.metrics.accuracy_score",
+      "sklearn.metrics.f1_score",
+      "sklearn.metrics.precision_score",
+      "sklearn.metrics.recall_score",
+      "time",
+      "torch",
+      "torch.optim.lr_scheduler.LambdaLR",
+      "tqdm.tqdm"
+    ]
+  },
+  {
+    "id": "repo-clone/process.py::_confusion_mat",
+    "file": "repo-clone/process.py",
+    "name": "_confusion_mat",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Trainer",
+      "FunctionDef:_confusion_mat"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Trainer",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 3,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 8,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 3,
+      "magic_numbers": [
+        2
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def _confusion_mat(self, label, pred):\n        if self.args.loss == 'ce':\n            mat = np.zeros((self.args.num_class, self.args.num_class))\n        else:\n            mat = np.zeros((2, 2))\n        for _label, _pred in zip(label, pred):\n            mat[_label, _pred] += 1\n        return mat\n",
+    "comments": [],
+    "dependencies": [
+      "np.zeros",
+      "zip"
+    ],
+    "imports": [
+      "loss.BCE",
+      "loss.CE",
+      "numpy",
+      "sklearn.metrics.accuracy_score",
+      "sklearn.metrics.f1_score",
+      "sklearn.metrics.precision_score",
+      "sklearn.metrics.recall_score",
+      "time",
+      "torch",
+      "torch.optim.lr_scheduler.LambdaLR",
+      "tqdm.tqdm"
+    ]
+  },
+  {
+    "id": "repo-clone/process.py::print_process",
+    "file": "repo-clone/process.py",
+    "name": "print_process",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Trainer",
+      "FunctionDef:print_process"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Trainer",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 3,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def print_process(self, *x):\n        if self.verbose:\n            print(*x)\n",
+    "comments": [],
+    "dependencies": [
+      "print"
+    ],
+    "imports": [
+      "loss.BCE",
+      "loss.CE",
+      "numpy",
+      "sklearn.metrics.accuracy_score",
+      "sklearn.metrics.f1_score",
+      "sklearn.metrics.precision_score",
+      "sklearn.metrics.recall_score",
+      "time",
+      "torch",
+      "torch.optim.lr_scheduler.LambdaLR",
+      "tqdm.tqdm"
+    ]
+  }
+]

@@ -3,6 +3,10 @@ import shutil
 import ast
 import json
 from git import Repo
+from transformers import RobertaTokenizer, RobertaModel
+
+tokenizer = RobertaTokenizer.from_pretrained("microsoft/codebert-base")
+model = RobertaModel.from_pretrained("microsoft/codebert-base")
 
 
 def extract_code(source_lines, node):
@@ -23,6 +27,12 @@ def extract_dependencies(node):
 
     CallVisitor().visit(node)
     return list(calls)
+
+def generate_embeddings(parsed_file = "parsed_repo.json", index_file="code_index.faiss"):
+    with open(parsed_file, "r", encoding="utf-8"):
+        chunks = json.load(parsed_file)
+    print()
+
 
 def parse_file(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
@@ -51,7 +61,7 @@ def parse_file(filepath):
                     "dependencies": deps,
                 })
             except Exception as e:
-                print(f"⚠️ Failed on node in {filepath}: {e}")
+                print(f"Failed on node in {filepath}: {e}")
     return chunks
 
 def walk_repo(repo_path):
@@ -79,4 +89,4 @@ def analyze_repo(repo_url, output_file="parsed_repo.json"):
     print(f"Extracted and saved {len(chunks)} code chunks to {output_file}")
 
 
-analyze_repo("https://github.com/Kalebu/Python-Speech-Recognition-.git")
+analyze_repo("https://github.com/Mingyue-Cheng/FormerTime")

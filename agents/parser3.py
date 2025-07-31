@@ -7,6 +7,7 @@ from pathlib import Path
 from git import Repo
 from collections import defaultdict
 import tokenize
+from urllib.parse import urlparse
 # --- Utility Functions ---
 
 def extract_comments(filepath):
@@ -209,7 +210,14 @@ def walk_repo(repo_path):
                 results.extend(chunks)
     return results
 
-def analyze_repo(repo_url, output_file="parsed_repo_4.json"):
+def analyze_repo(repo_url):
+    # Extract repo name from URL (e.g., 'https://github.com/user/repo.git' → 'repo')
+    repo_name = os.path.splitext(os.path.basename(urlparse(repo_url).path))[0]
+
+    output_dir = "parsed files"
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, f"{repo_name}.json")
+
     clone_path = "repo-clone"
     if os.path.exists(clone_path):
         shutil.rmtree(clone_path)
@@ -218,10 +226,9 @@ def analyze_repo(repo_url, output_file="parsed_repo_4.json"):
 
     chunks = walk_repo(clone_path)
 
+    # Save to JSON
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(chunks, f, indent=2)
 
     print(f"Extracted and saved {len(chunks)} code chunks to {output_file}")
 
-# Example usage
-analyze_repo("https://github.com/Mingyue-Cheng/FormerTime")

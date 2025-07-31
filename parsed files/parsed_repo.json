@@ -1,0 +1,850 @@
+[
+  {
+    "file": "repo-clone\\dataset.py",
+    "name": "Dataset",
+    "type": "ClassDef",
+    "docstring": null,
+    "code": "class Dataset(Data.Dataset):\n    def __init__(self, device, mode):\n        self.device = device\n        if mode == 'train':\n            self.datas, self.label = Train_data\n        else:\n            self.datas, self.label = Test_data\n        self.mode = mode\n\n    def __len__(self):\n        return len(self.datas)\n\n    def __getitem__(self, item):\n        data = torch.tensor(self.datas[item]).to(self.device)\n        label = self.label[item]\n        return data, torch.tensor(label).to(self.device)\n\n    def shape(self):\n        return self.datas[0].shape\n",
+    "dependencies": [
+      "torch.tensor(label).to",
+      "len",
+      "torch.tensor(self.datas[item]).to",
+      "torch.tensor"
+    ]
+  },
+  {
+    "file": "repo-clone\\dataset.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, device, mode):\n        self.device = device\n        if mode == 'train':\n            self.datas, self.label = Train_data\n        else:\n            self.datas, self.label = Test_data\n        self.mode = mode\n",
+    "dependencies": []
+  },
+  {
+    "file": "repo-clone\\dataset.py",
+    "name": "__len__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __len__(self):\n        return len(self.datas)\n",
+    "dependencies": [
+      "len"
+    ]
+  },
+  {
+    "file": "repo-clone\\dataset.py",
+    "name": "__getitem__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __getitem__(self, item):\n        data = torch.tensor(self.datas[item]).to(self.device)\n        label = self.label[item]\n        return data, torch.tensor(label).to(self.device)\n",
+    "dependencies": [
+      "torch.tensor(label).to",
+      "torch.tensor(self.datas[item]).to",
+      "torch.tensor"
+    ]
+  },
+  {
+    "file": "repo-clone\\dataset.py",
+    "name": "shape",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def shape(self):\n        return self.datas[0].shape\n",
+    "dependencies": []
+  },
+  {
+    "file": "repo-clone\\datautils.py",
+    "name": "padding_varying_length",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "def padding_varying_length(data):\n    for i in range(data.shape[0]):\n        for j in range(data.shape[1]):\n            data[i, j, :][np.isnan(data[i, j, :])] = 0\n    return data\n",
+    "dependencies": [
+      "range",
+      "np.isnan"
+    ]
+  },
+  {
+    "file": "repo-clone\\datautils.py",
+    "name": "load_UCR",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "def load_UCR(Path='../../archives/UCR_UEA/Multivariate_arff/', folder='Cricket'):\n    train_path = Path + folder + '/' + folder + '_TRAIN.arff'\n    test_path = Path + folder + '/' + folder + '_TEST.arff'\n    TRAIN_DATA = []\n    TRAIN_LABEL = []\n    label_dict = {}\n    label_index = 0\n    with open(train_path, encoding='UTF-8', errors='ignore') as f:\n        data, meta = arff.loadarff(f)\n        f.close()\n    if type(data[0][0]) == np.ndarray:  # multivariate\n        for index in range(data.shape[0]):\n            raw_data = data[index][0]\n            raw_label = data[index][1]\n            if label_dict.__contains__(raw_label):\n                TRAIN_LABEL.append(label_dict[raw_label])\n            else:\n                label_dict[raw_label] = label_index\n                TRAIN_LABEL.append(label_index)\n                label_index += 1\n            raw_data_list = raw_data.tolist()\n            # print(raw_data_list)\n            TRAIN_DATA.append(np.array(raw_data_list).astype(np.float32).transpose(-1, 0))\n\n        TEST_DATA = []\n        TEST_LABEL = []\n        with open(test_path, encoding='UTF-8', errors='ignore') as f:\n            data, meta = arff.loadarff(f)\n            f.close()\n        for index in range(data.shape[0]):\n            raw_data = data[index][0]\n            raw_label = data[index][1]\n            TEST_LABEL.append(label_dict[raw_label])\n            raw_data_list = raw_data.tolist()\n            TEST_DATA.append(np.array(raw_data_list).astype(np.float32).transpose(-1, 0))\n\n        TRAIN_DATA = padding_varying_length(np.array(TRAIN_DATA))\n        TEST_DATA = padding_varying_length(np.array(TEST_DATA))\n\n        return [np.array(TRAIN_DATA), np.array(TRAIN_LABEL)], [np.array(TEST_DATA), np.array(TEST_LABEL)]\n\n    else:  # univariate\n        for index in range(data.shape[0]):\n            raw_data = np.array(list(data[index]))[:-1]\n            raw_label = data[index][-1]\n            if label_dict.__contains__(raw_label):\n                TRAIN_LABEL.append(label_dict[raw_label])\n            else:\n                label_dict[raw_label] = label_index\n                TRAIN_LABEL.append(label_index)\n                label_index += 1\n            TRAIN_DATA.append(np.array(raw_data).astype(np.float32).reshape(-1, 1))\n\n        TEST_DATA = []\n        TEST_LABEL = []\n        with open(test_path, encoding='UTF-8', errors='ignore') as f:\n            data, meta = arff.loadarff(f)\n            f.close()\n        for index in range(data.shape[0]):\n            raw_data = np.array(list(data[index]))[:-1]\n            raw_label = data[index][-1]\n            TEST_LABEL.append(label_dict[raw_label])\n            TEST_DATA.append(np.array(raw_data).astype(np.float32).reshape(-1, 1))\n\n        TRAIN_DATA = padding_varying_length(np.array(TRAIN_DATA))\n        TEST_DATA = padding_varying_length(np.array(TEST_DATA))\n\n        return [np.array(TRAIN_DATA), np.array(TRAIN_LABEL)], [np.array(TEST_DATA), np.array(TEST_LABEL)]\n",
+    "dependencies": [
+      "np.array(raw_data_list).astype",
+      "TEST_DATA.append",
+      "type",
+      "TRAIN_LABEL.append",
+      "range",
+      "np.array(raw_data).astype(np.float32).reshape",
+      "list",
+      "np.array(raw_data_list).astype(np.float32).transpose",
+      "arff.loadarff",
+      "padding_varying_length",
+      "raw_data.tolist",
+      "open",
+      "label_dict.__contains__",
+      "np.array(raw_data).astype",
+      "np.array",
+      "f.close",
+      "TRAIN_DATA.append",
+      "TEST_LABEL.append"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "PositionalEmbedding",
+    "type": "ClassDef",
+    "docstring": null,
+    "code": "class PositionalEmbedding(nn.Module):\n\n    def __init__(self, max_len, d_model, grad=True):\n        super(PositionalEmbedding, self).__init__()\n\n        # Compute the positional encodings once in log space.\n        self.pe = nn.Embedding(max_len, d_model)\n        self.grad = grad\n\n    def forward(self, x):\n        batch_size = x.size(0)\n        if not self.grad:\n            with torch.no_grad():\n                return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)\n        return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)\n",
+    "dependencies": [
+      "x.size",
+      "super",
+      "self.pe.weight.unsqueeze",
+      "super(PositionalEmbedding, self).__init__",
+      "torch.no_grad",
+      "nn.Embedding",
+      "self.pe.weight.unsqueeze(0).repeat"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "Attention",
+    "type": "ClassDef",
+    "docstring": "Compute 'Scaled Dot Product Attention",
+    "code": "class Attention(nn.Module):\n    \"\"\"\n    Compute 'Scaled Dot Product Attention\n    \"\"\"\n\n    def forward(self, query, key, value, mask=None, dropout=None):\n        scores = torch.matmul(query, key.transpose(-2, -1)) \\\n                 / math.sqrt(query.size(-1))\n\n        if mask is not None:\n            scores = scores.masked_fill(mask == 0, -1e9)\n\n        p_attn = F.softmax(scores, dim=-1)\n\n        if dropout is not None:\n            p_attn = dropout(p_attn)\n\n        # self.attn = p_attn\n\n        return torch.matmul(p_attn, value), p_attn\n",
+    "dependencies": [
+      "query.size",
+      "scores.masked_fill",
+      "dropout",
+      "key.transpose",
+      "torch.matmul",
+      "math.sqrt",
+      "F.softmax"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "MultiHeadAttention",
+    "type": "ClassDef",
+    "docstring": "Take in model size and number of heads.",
+    "code": "class MultiHeadAttention(nn.Module):\n    \"\"\"\n    Take in model size and number of heads.\n    \"\"\"\n\n    def __init__(self, h, d_model, dropout=0.1, tr=2, data_len=5000):\n        super(MultiHeadAttention, self).__init__()\n        assert d_model % h == 0\n\n        # We assume d_v always equals d_k\n        self.d_k = d_model // h\n        self.h = h\n        self.attention = Attention()\n        self.q = nn.Linear(d_model, d_model)\n        self.k = nn.Linear(d_model, d_model)\n        self.v = nn.Linear(d_model, d_model)\n        self.output_linear = nn.Linear(d_model, d_model)\n        self.tr = tr\n        self.scale = self.d_k ** -0.5\n        if tr > 1:\n            self.tr_layer = nn.Conv1d(data_len, data_len // tr, 1)\n            self.norm = nn.LayerNorm(d_model)\n\n        self.dropout = nn.Dropout(p=dropout)\n\n    def forward(self, x):\n        B, N, C = x.shape\n        q = self.q(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n        if self.tr > 1:\n            x_ = self.norm(self.tr_layer(x))\n            k = self.k(x_).reshape(B, -1, self.h, C // self.h).permute(0, 2, 1, 3)\n            v = self.v(x_).reshape(B, -1, self.h, C // self.h).permute(0, 2, 1, 3)\n        else:\n            k = self.k(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n            v = self.v(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n        x, attn = self.attention(q, k, v, mask=None, dropout=self.dropout)\n        x = x.transpose(1, 2).contiguous().view(B, -1, self.h * self.d_k)\n        return x\n",
+    "dependencies": [
+      "self.v(x_).reshape(B, -1, self.h, C // self.h).permute",
+      "super",
+      "x.transpose(1, 2).contiguous",
+      "self.v",
+      "self.q(x).reshape",
+      "self.norm",
+      "self.k",
+      "nn.Linear",
+      "self.q(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.v(x).reshape(B, N, self.h, C // self.h).permute",
+      "Attention",
+      "self.k(x_).reshape(B, -1, self.h, C // self.h).permute",
+      "self.v(x_).reshape",
+      "x.transpose(1, 2).contiguous().view",
+      "super(MultiHeadAttention, self).__init__",
+      "self.k(x).reshape",
+      "self.q",
+      "nn.Dropout",
+      "nn.Conv1d",
+      "self.attention",
+      "nn.LayerNorm",
+      "self.k(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.v(x).reshape",
+      "x.transpose",
+      "self.k(x_).reshape",
+      "self.tr_layer"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "SublayerConnection",
+    "type": "ClassDef",
+    "docstring": "A residual connection followed by a layer norm.",
+    "code": "class SublayerConnection(nn.Module):\n    \"\"\"\n    A residual connection followed by a layer norm.\n    \"\"\"\n\n    def __init__(self, size, enable_res_parameter, dropout=0.1):\n        super(SublayerConnection, self).__init__()\n        self.norm = nn.LayerNorm(size)\n        self.dropout = nn.Dropout(dropout)\n        self.enable = enable_res_parameter\n        if enable_res_parameter:\n            self.a = nn.Parameter(torch.tensor(1e-8))\n\n    def forward(self, x, sublayer):\n        \"Apply residual connection to any sublayer with the same size.\"\n        if not self.enable:\n            return self.norm(x + self.dropout(sublayer(x)))  # layer_norm\n        else:\n            return self.norm(x + self.dropout(self.a * sublayer(x)))  # layer_norm\n",
+    "dependencies": [
+      "super",
+      "torch.tensor",
+      "sublayer",
+      "nn.Dropout",
+      "self.dropout",
+      "super(SublayerConnection, self).__init__",
+      "nn.Parameter",
+      "self.norm",
+      "nn.LayerNorm"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "PointWiseFeedForward",
+    "type": "ClassDef",
+    "docstring": "FFN implement",
+    "code": "class PointWiseFeedForward(nn.Module):\n    \"\"\"\n    FFN implement\n    \"\"\"\n\n    def __init__(self, d_model, d_ffn, dropout=0.1):\n        super(PointWiseFeedForward, self).__init__()\n        self.linear1 = nn.Linear(d_model, d_ffn)\n        self.linear2 = nn.Linear(d_ffn, d_model)\n        self.activation = nn.GELU()\n        self.dropout = nn.Dropout(dropout)\n\n    def forward(self, x):\n        return self.dropout(self.linear2(self.activation(self.linear1(x))))\n",
+    "dependencies": [
+      "super(PointWiseFeedForward, self).__init__",
+      "super",
+      "self.linear1",
+      "nn.Dropout",
+      "self.activation",
+      "nn.GELU",
+      "self.linear2",
+      "self.dropout",
+      "nn.Linear"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "TransformerBlock",
+    "type": "ClassDef",
+    "docstring": "TRM layer",
+    "code": "class TransformerBlock(nn.Module):\n    \"\"\"\n    TRM layer\n    \"\"\"\n\n    def __init__(self, d_model, attn_heads, d_ffn, enable_res_parameter, tr, data_len, dropout=0.1):\n        super(TransformerBlock, self).__init__()\n        self.attn = MultiHeadAttention(attn_heads, d_model, dropout, tr, data_len)\n        self.ffn = PointWiseFeedForward(d_model, d_ffn, dropout)\n        self.skipconnect1 = SublayerConnection(d_model, enable_res_parameter, dropout)\n        self.skipconnect2 = SublayerConnection(d_model, enable_res_parameter, dropout)\n\n    def forward(self, x, mask):\n        x = self.skipconnect1(x, lambda _x: self.attn.forward(_x))\n        x = self.skipconnect2(x, self.ffn)\n        return x\n",
+    "dependencies": [
+      "SublayerConnection",
+      "super",
+      "PointWiseFeedForward",
+      "MultiHeadAttention",
+      "self.skipconnect1",
+      "self.skipconnect2",
+      "self.attn.forward",
+      "super(TransformerBlock, self).__init__"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "Encoder",
+    "type": "ClassDef",
+    "docstring": "encoder in FormerTime",
+    "code": "class Encoder(nn.Module):\n    \"\"\"\n    encoder in FormerTime\n    \"\"\"\n\n    def __init__(self, slice_size, data_shape, d_encoder, attn_heads, enable_res_parameter, device, tr,\n                 stride, layers, position_location, position_type):\n        super(Encoder, self).__init__()\n        self.stride = (stride, data_shape[1])\n        self.slice_size = slice_size\n        self.data_shape = data_shape\n        self.device = device\n        self.max_len = self.data_shape[0]\n        self.position_location = position_location\n        self.position_type = position_type\n\n        self.input_projection = nn.Conv1d(self.slice_size[1], d_encoder, kernel_size=self.slice_size[0],\n                                          stride=self.stride[0])\n        self.input_norm = nn.LayerNorm(d_encoder)\n        if position_type == 'cond' or position_type == 'conv_static':\n            self.position = nn.Conv1d(d_encoder, d_encoder, kernel_size=5, padding='same')\n            self.a = nn.Parameter(torch.tensor(1.))\n        elif position_type == 'relative':\n            self.position = PositionalEmbedding(self.max_len, d_encoder)\n        else:\n            self.position = PositionalEmbedding(self.max_len, d_encoder, grad=False)\n\n        self.TRMs = nn.ModuleList([\n            TransformerBlock(d_encoder, attn_heads, 4 * d_encoder, enable_res_parameter, tr, data_shape[0]) for i in\n            range(layers)\n        ])\n\n    def forward(self, x):\n        if len(x.shape) == 4:\n            x = x.squeeze(1)\n        x = self.input_projection(x.transpose(1, 2)).transpose(1, 2)\n        x = self.input_norm(x)\n        if self.position_location == 'top':\n            if self.position_type == 'cond' or self.position_type == 'conv_static':\n                x = x.transpose(2, 1)\n                if self.position_type == 'cond':\n                    x = x + self.position(x)\n                else:\n                    with torch.no_grad():\n                        x = x + self.position(x)\n                x = x.transpose(2, 1)\n            elif self.position_type != 'none':\n                x += self.position(x)\n        for index, TRM in enumerate(self.TRMs):\n            x = TRM(x, mask=None)\n            if index == 1 and self.position_location == 'middle':\n                if self.position_type == 'cond':\n                    x = x.transpose(2, 1)\n                    x = x + self.position(x)\n                    x = x.transpose(2, 1)\n                elif self.position_type != 'none':\n                    x += self.position(x)\n        return x\n",
+    "dependencies": [
+      "super",
+      "torch.tensor",
+      "torch.no_grad",
+      "self.position",
+      "nn.ModuleList",
+      "self.input_projection(x.transpose(1, 2)).transpose",
+      "enumerate",
+      "TransformerBlock",
+      "x.squeeze",
+      "TRM",
+      "range",
+      "PositionalEmbedding",
+      "nn.Conv1d",
+      "len",
+      "nn.Parameter",
+      "self.input_norm",
+      "nn.LayerNorm",
+      "super(Encoder, self).__init__",
+      "x.transpose",
+      "self.input_projection"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "FormerTime",
+    "type": "ClassDef",
+    "docstring": "FormerTime model",
+    "code": "class FormerTime(nn.Module):\n    \"\"\"\n    FormerTime model\n    \"\"\"\n\n    def __init__(self, args):\n        super(FormerTime, self).__init__()\n        attn_heads = args.attn_heads\n        layers = args.stages\n        enable_res_parameter = args.enable_res_parameter\n        num_class = args.num_class\n\n        self.device = args.device\n        self.position = args.position_location\n        self.pooling_type = args.pooling_type\n        self.data_shape = args.data_shape\n        self.d_encoder = args.hidden_size_per_stage\n        self.slice_sizes = [(i, j) for i, j in zip(args.slice_per_stage, [self.data_shape[1]] + self.d_encoder)]\n        self.tr = args.tr\n        self.stride = args.stride_per_stage\n        self.layer_per_stage = args.layer_per_stage\n\n        self._form_data_shape()\n        self.encs = nn.ModuleList([\n            Encoder(slice_size=self.slice_sizes[i], data_shape=self.data_shapes[i], d_encoder=self.d_encoder[i],\n                       attn_heads=attn_heads, device=self.device, enable_res_parameter=enable_res_parameter,\n                       stride=self.stride[i], tr=self.tr[i], layers=self.layer_per_stage[i],\n                       position_location=self.position, position_type=args.position_type)\n            for i in range(layers)\n        ])\n        self.output = nn.Sequential(\n            nn.Linear(self.data_shapes[-1][0] * self.d_encoder[-1], num_class),\n            # nn.Sigmoid()\n        ) if self.pooling_type == 'cat' else nn.Sequential(\n            nn.Linear(self.d_encoder[-1], num_class),\n            # nn.Sigmoid()\n        )\n\n        self.apply(self._init_weights)\n\n    def _init_weights(self, module):\n        if isinstance(module, nn.Linear):\n            xavier_normal_(module.weight.data)\n            if module.bias is not None:\n                constant_(module.bias.data, 0.1)\n\n\n    def _form_data_shape(self):\n        self.data_shapes = []\n        for i in range(len(self.tr)):\n            if not i:\n                data_shape_pre = self.data_shape\n            else:\n                data_shape_pre = self.data_shapes[-1]\n            len_raw = (data_shape_pre[0] - self.slice_sizes[i][0]) // self.stride[i] + 1\n            self.data_shapes.append(\n                (len_raw, self.d_encoder[i]))\n        print(self.data_shapes)\n\n    def forward(self, x):\n        for Encs in self.encs:\n            x = Encs(x)\n        if self.pooling_type == 'last_token':\n            return self.output(x[:, -1, :])\n        elif self.pooling_type == 'mean':\n            return self.output(torch.mean(x, dim=1))\n        elif self.pooling_type == 'cat':\n            return self.output(x.view(x.shape[0], -1))\n        else:\n            return self.output(torch.max(x, dim=1)[0])\n\n    def encode(self, x):\n        for Encs in self.encs:\n            x = Encs(x)\n        if self.pooling_type == 'last_token':\n            return x[:, -1, :]\n        elif self.pooling_type == 'mean':\n            return torch.mean(x, dim=1)\n        elif self.pooling_type == 'cat':\n            return x.view(x.shape[0], -1)\n        else:\n            return torch.max(x, dim=1)[0]\n",
+    "dependencies": [
+      "super",
+      "x.view",
+      "Encs",
+      "isinstance",
+      "nn.Linear",
+      "nn.ModuleList",
+      "self._form_data_shape",
+      "super(FormerTime, self).__init__",
+      "Encoder",
+      "torch.mean",
+      "self.data_shapes.append",
+      "nn.Sequential",
+      "range",
+      "print",
+      "torch.max",
+      "len",
+      "self.apply",
+      "self.output",
+      "xavier_normal_",
+      "zip",
+      "constant_"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, max_len, d_model, grad=True):\n        super(PositionalEmbedding, self).__init__()\n\n        # Compute the positional encodings once in log space.\n        self.pe = nn.Embedding(max_len, d_model)\n        self.grad = grad\n",
+    "dependencies": [
+      "super(PositionalEmbedding, self).__init__",
+      "super",
+      "nn.Embedding"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def forward(self, x):\n        batch_size = x.size(0)\n        if not self.grad:\n            with torch.no_grad():\n                return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)\n        return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)\n",
+    "dependencies": [
+      "torch.no_grad",
+      "x.size",
+      "self.pe.weight.unsqueeze(0).repeat",
+      "self.pe.weight.unsqueeze"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def forward(self, query, key, value, mask=None, dropout=None):\n        scores = torch.matmul(query, key.transpose(-2, -1)) \\\n                 / math.sqrt(query.size(-1))\n\n        if mask is not None:\n            scores = scores.masked_fill(mask == 0, -1e9)\n\n        p_attn = F.softmax(scores, dim=-1)\n\n        if dropout is not None:\n            p_attn = dropout(p_attn)\n\n        # self.attn = p_attn\n\n        return torch.matmul(p_attn, value), p_attn\n",
+    "dependencies": [
+      "query.size",
+      "scores.masked_fill",
+      "dropout",
+      "key.transpose",
+      "torch.matmul",
+      "math.sqrt",
+      "F.softmax"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, h, d_model, dropout=0.1, tr=2, data_len=5000):\n        super(MultiHeadAttention, self).__init__()\n        assert d_model % h == 0\n\n        # We assume d_v always equals d_k\n        self.d_k = d_model // h\n        self.h = h\n        self.attention = Attention()\n        self.q = nn.Linear(d_model, d_model)\n        self.k = nn.Linear(d_model, d_model)\n        self.v = nn.Linear(d_model, d_model)\n        self.output_linear = nn.Linear(d_model, d_model)\n        self.tr = tr\n        self.scale = self.d_k ** -0.5\n        if tr > 1:\n            self.tr_layer = nn.Conv1d(data_len, data_len // tr, 1)\n            self.norm = nn.LayerNorm(d_model)\n\n        self.dropout = nn.Dropout(p=dropout)\n",
+    "dependencies": [
+      "super",
+      "Attention",
+      "nn.Dropout",
+      "nn.Conv1d",
+      "super(MultiHeadAttention, self).__init__",
+      "nn.LayerNorm",
+      "nn.Linear"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def forward(self, x):\n        B, N, C = x.shape\n        q = self.q(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n        if self.tr > 1:\n            x_ = self.norm(self.tr_layer(x))\n            k = self.k(x_).reshape(B, -1, self.h, C // self.h).permute(0, 2, 1, 3)\n            v = self.v(x_).reshape(B, -1, self.h, C // self.h).permute(0, 2, 1, 3)\n        else:\n            k = self.k(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n            v = self.v(x).reshape(B, N, self.h, C // self.h).permute(0, 2, 1, 3)\n        x, attn = self.attention(q, k, v, mask=None, dropout=self.dropout)\n        x = x.transpose(1, 2).contiguous().view(B, -1, self.h * self.d_k)\n        return x\n",
+    "dependencies": [
+      "self.v(x_).reshape(B, -1, self.h, C // self.h).permute",
+      "x.transpose(1, 2).contiguous",
+      "self.v",
+      "self.q(x).reshape",
+      "self.norm",
+      "self.k",
+      "self.q(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.v(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.k(x_).reshape(B, -1, self.h, C // self.h).permute",
+      "self.v(x_).reshape",
+      "x.transpose(1, 2).contiguous().view",
+      "self.k(x).reshape",
+      "self.q",
+      "self.attention",
+      "self.k(x).reshape(B, N, self.h, C // self.h).permute",
+      "self.v(x).reshape",
+      "x.transpose",
+      "self.k(x_).reshape",
+      "self.tr_layer"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, size, enable_res_parameter, dropout=0.1):\n        super(SublayerConnection, self).__init__()\n        self.norm = nn.LayerNorm(size)\n        self.dropout = nn.Dropout(dropout)\n        self.enable = enable_res_parameter\n        if enable_res_parameter:\n            self.a = nn.Parameter(torch.tensor(1e-8))\n",
+    "dependencies": [
+      "super",
+      "torch.tensor",
+      "nn.Dropout",
+      "super(SublayerConnection, self).__init__",
+      "nn.Parameter",
+      "nn.LayerNorm"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "docstring": "Apply residual connection to any sublayer with the same size.",
+    "code": "    def forward(self, x, sublayer):\n        \"Apply residual connection to any sublayer with the same size.\"\n        if not self.enable:\n            return self.norm(x + self.dropout(sublayer(x)))  # layer_norm\n        else:\n            return self.norm(x + self.dropout(self.a * sublayer(x)))  # layer_norm\n",
+    "dependencies": [
+      "sublayer",
+      "self.dropout",
+      "self.norm"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, d_model, d_ffn, dropout=0.1):\n        super(PointWiseFeedForward, self).__init__()\n        self.linear1 = nn.Linear(d_model, d_ffn)\n        self.linear2 = nn.Linear(d_ffn, d_model)\n        self.activation = nn.GELU()\n        self.dropout = nn.Dropout(dropout)\n",
+    "dependencies": [
+      "super(PointWiseFeedForward, self).__init__",
+      "super",
+      "nn.Dropout",
+      "nn.GELU",
+      "nn.Linear"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def forward(self, x):\n        return self.dropout(self.linear2(self.activation(self.linear1(x))))\n",
+    "dependencies": [
+      "self.linear1",
+      "self.linear2",
+      "self.activation",
+      "self.dropout"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, d_model, attn_heads, d_ffn, enable_res_parameter, tr, data_len, dropout=0.1):\n        super(TransformerBlock, self).__init__()\n        self.attn = MultiHeadAttention(attn_heads, d_model, dropout, tr, data_len)\n        self.ffn = PointWiseFeedForward(d_model, d_ffn, dropout)\n        self.skipconnect1 = SublayerConnection(d_model, enable_res_parameter, dropout)\n        self.skipconnect2 = SublayerConnection(d_model, enable_res_parameter, dropout)\n",
+    "dependencies": [
+      "SublayerConnection",
+      "super",
+      "PointWiseFeedForward",
+      "MultiHeadAttention",
+      "super(TransformerBlock, self).__init__"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def forward(self, x, mask):\n        x = self.skipconnect1(x, lambda _x: self.attn.forward(_x))\n        x = self.skipconnect2(x, self.ffn)\n        return x\n",
+    "dependencies": [
+      "self.skipconnect2",
+      "self.attn.forward",
+      "self.skipconnect1"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, slice_size, data_shape, d_encoder, attn_heads, enable_res_parameter, device, tr,\n                 stride, layers, position_location, position_type):\n        super(Encoder, self).__init__()\n        self.stride = (stride, data_shape[1])\n        self.slice_size = slice_size\n        self.data_shape = data_shape\n        self.device = device\n        self.max_len = self.data_shape[0]\n        self.position_location = position_location\n        self.position_type = position_type\n\n        self.input_projection = nn.Conv1d(self.slice_size[1], d_encoder, kernel_size=self.slice_size[0],\n                                          stride=self.stride[0])\n        self.input_norm = nn.LayerNorm(d_encoder)\n        if position_type == 'cond' or position_type == 'conv_static':\n            self.position = nn.Conv1d(d_encoder, d_encoder, kernel_size=5, padding='same')\n            self.a = nn.Parameter(torch.tensor(1.))\n        elif position_type == 'relative':\n            self.position = PositionalEmbedding(self.max_len, d_encoder)\n        else:\n            self.position = PositionalEmbedding(self.max_len, d_encoder, grad=False)\n\n        self.TRMs = nn.ModuleList([\n            TransformerBlock(d_encoder, attn_heads, 4 * d_encoder, enable_res_parameter, tr, data_shape[0]) for i in\n            range(layers)\n        ])\n",
+    "dependencies": [
+      "nn.ModuleList",
+      "super",
+      "torch.tensor",
+      "range",
+      "PositionalEmbedding",
+      "super(Encoder, self).__init__",
+      "nn.Conv1d",
+      "TransformerBlock",
+      "nn.Parameter",
+      "nn.LayerNorm"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def forward(self, x):\n        if len(x.shape) == 4:\n            x = x.squeeze(1)\n        x = self.input_projection(x.transpose(1, 2)).transpose(1, 2)\n        x = self.input_norm(x)\n        if self.position_location == 'top':\n            if self.position_type == 'cond' or self.position_type == 'conv_static':\n                x = x.transpose(2, 1)\n                if self.position_type == 'cond':\n                    x = x + self.position(x)\n                else:\n                    with torch.no_grad():\n                        x = x + self.position(x)\n                x = x.transpose(2, 1)\n            elif self.position_type != 'none':\n                x += self.position(x)\n        for index, TRM in enumerate(self.TRMs):\n            x = TRM(x, mask=None)\n            if index == 1 and self.position_location == 'middle':\n                if self.position_type == 'cond':\n                    x = x.transpose(2, 1)\n                    x = x + self.position(x)\n                    x = x.transpose(2, 1)\n                elif self.position_type != 'none':\n                    x += self.position(x)\n        return x\n",
+    "dependencies": [
+      "self.input_norm",
+      "self.input_projection(x.transpose(1, 2)).transpose",
+      "enumerate",
+      "torch.no_grad",
+      "x.transpose",
+      "self.position",
+      "len",
+      "x.squeeze",
+      "self.input_projection",
+      "TRM"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, args):\n        super(FormerTime, self).__init__()\n        attn_heads = args.attn_heads\n        layers = args.stages\n        enable_res_parameter = args.enable_res_parameter\n        num_class = args.num_class\n\n        self.device = args.device\n        self.position = args.position_location\n        self.pooling_type = args.pooling_type\n        self.data_shape = args.data_shape\n        self.d_encoder = args.hidden_size_per_stage\n        self.slice_sizes = [(i, j) for i, j in zip(args.slice_per_stage, [self.data_shape[1]] + self.d_encoder)]\n        self.tr = args.tr\n        self.stride = args.stride_per_stage\n        self.layer_per_stage = args.layer_per_stage\n\n        self._form_data_shape()\n        self.encs = nn.ModuleList([\n            Encoder(slice_size=self.slice_sizes[i], data_shape=self.data_shapes[i], d_encoder=self.d_encoder[i],\n                       attn_heads=attn_heads, device=self.device, enable_res_parameter=enable_res_parameter,\n                       stride=self.stride[i], tr=self.tr[i], layers=self.layer_per_stage[i],\n                       position_location=self.position, position_type=args.position_type)\n            for i in range(layers)\n        ])\n        self.output = nn.Sequential(\n            nn.Linear(self.data_shapes[-1][0] * self.d_encoder[-1], num_class),\n            # nn.Sigmoid()\n        ) if self.pooling_type == 'cat' else nn.Sequential(\n            nn.Linear(self.d_encoder[-1], num_class),\n            # nn.Sigmoid()\n        )\n\n        self.apply(self._init_weights)\n",
+    "dependencies": [
+      "nn.ModuleList",
+      "self.apply",
+      "super",
+      "range",
+      "self._form_data_shape",
+      "super(FormerTime, self).__init__",
+      "zip",
+      "Encoder",
+      "nn.Sequential",
+      "nn.Linear"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "_init_weights",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def _init_weights(self, module):\n        if isinstance(module, nn.Linear):\n            xavier_normal_(module.weight.data)\n            if module.bias is not None:\n                constant_(module.bias.data, 0.1)\n",
+    "dependencies": [
+      "xavier_normal_",
+      "isinstance",
+      "constant_"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "_form_data_shape",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def _form_data_shape(self):\n        self.data_shapes = []\n        for i in range(len(self.tr)):\n            if not i:\n                data_shape_pre = self.data_shape\n            else:\n                data_shape_pre = self.data_shapes[-1]\n            len_raw = (data_shape_pre[0] - self.slice_sizes[i][0]) // self.stride[i] + 1\n            self.data_shapes.append(\n                (len_raw, self.d_encoder[i]))\n        print(self.data_shapes)\n",
+    "dependencies": [
+      "range",
+      "len",
+      "print",
+      "self.data_shapes.append"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "forward",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def forward(self, x):\n        for Encs in self.encs:\n            x = Encs(x)\n        if self.pooling_type == 'last_token':\n            return self.output(x[:, -1, :])\n        elif self.pooling_type == 'mean':\n            return self.output(torch.mean(x, dim=1))\n        elif self.pooling_type == 'cat':\n            return self.output(x.view(x.shape[0], -1))\n        else:\n            return self.output(torch.max(x, dim=1)[0])\n",
+    "dependencies": [
+      "x.view",
+      "self.output",
+      "Encs",
+      "torch.max",
+      "torch.mean"
+    ]
+  },
+  {
+    "file": "repo-clone\\FormerTime.py",
+    "name": "encode",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def encode(self, x):\n        for Encs in self.encs:\n            x = Encs(x)\n        if self.pooling_type == 'last_token':\n            return x[:, -1, :]\n        elif self.pooling_type == 'mean':\n            return torch.mean(x, dim=1)\n        elif self.pooling_type == 'cat':\n            return x.view(x.shape[0], -1)\n        else:\n            return torch.max(x, dim=1)[0]\n",
+    "dependencies": [
+      "torch.max",
+      "Encs",
+      "torch.mean",
+      "x.view"
+    ]
+  },
+  {
+    "file": "repo-clone\\loss.py",
+    "name": "CE",
+    "type": "ClassDef",
+    "docstring": null,
+    "code": "class CE:\n    def __init__(self, model):\n        self.model = model\n        self.ce = nn.CrossEntropyLoss()\n\n    def compute(self, batch):\n        seqs, labels = batch\n        outputs = self.model(seqs)  # B * N\n        labels = labels.view(-1).long()\n        loss = self.ce(outputs, labels)\n        return loss\n",
+    "dependencies": [
+      "self.model",
+      "labels.view(-1).long",
+      "self.ce",
+      "nn.CrossEntropyLoss",
+      "labels.view"
+    ]
+  },
+  {
+    "file": "repo-clone\\loss.py",
+    "name": "BCE",
+    "type": "ClassDef",
+    "docstring": null,
+    "code": "class BCE:\n    def __init__(self, model):\n        self.model = model\n        self.bce = nn.BCELoss(reduction='none')\n\n    def compute(self, batch):\n        seqs, labels = batch\n        outputs = self.model(seqs)  # B * N\n        weight = torch.ones(outputs.shape[0]).float().to(outputs.device)\n        loss = self.bce(outputs.view(-1), labels.float())\n        loss = torch.mean(weight * loss)\n        return loss\n",
+    "dependencies": [
+      "self.model",
+      "outputs.view",
+      "torch.ones(outputs.shape[0]).float().to",
+      "labels.float",
+      "torch.ones",
+      "nn.BCELoss",
+      "torch.ones(outputs.shape[0]).float",
+      "torch.mean",
+      "self.bce"
+    ]
+  },
+  {
+    "file": "repo-clone\\loss.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, model):\n        self.model = model\n        self.ce = nn.CrossEntropyLoss()\n",
+    "dependencies": [
+      "nn.CrossEntropyLoss"
+    ]
+  },
+  {
+    "file": "repo-clone\\loss.py",
+    "name": "compute",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def compute(self, batch):\n        seqs, labels = batch\n        outputs = self.model(seqs)  # B * N\n        labels = labels.view(-1).long()\n        loss = self.ce(outputs, labels)\n        return loss\n",
+    "dependencies": [
+      "self.model",
+      "labels.view(-1).long",
+      "labels.view",
+      "self.ce"
+    ]
+  },
+  {
+    "file": "repo-clone\\loss.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, model):\n        self.model = model\n        self.bce = nn.BCELoss(reduction='none')\n",
+    "dependencies": [
+      "nn.BCELoss"
+    ]
+  },
+  {
+    "file": "repo-clone\\loss.py",
+    "name": "compute",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def compute(self, batch):\n        seqs, labels = batch\n        outputs = self.model(seqs)  # B * N\n        weight = torch.ones(outputs.shape[0]).float().to(outputs.device)\n        loss = self.bce(outputs.view(-1), labels.float())\n        loss = torch.mean(weight * loss)\n        return loss\n",
+    "dependencies": [
+      "self.model",
+      "outputs.view",
+      "torch.ones(outputs.shape[0]).float().to",
+      "labels.float",
+      "torch.ones",
+      "torch.ones(outputs.shape[0]).float",
+      "torch.mean",
+      "self.bce"
+    ]
+  },
+  {
+    "file": "repo-clone\\main.py",
+    "name": "main",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "def main():\n    torch.set_num_threads(6)\n    train_dataset = Dataset(device=args.device, mode='train')\n    train_loader = Data.DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)\n    args.data_shape = train_dataset.shape()\n    test_dataset = Dataset(device=args.device, mode='test')\n    test_loader = Data.DataLoader(test_dataset, batch_size=args.test_batch_size)\n\n    print(args.data_shape)\n    print('dataset initial ends')\n\n    model = FormerTime(args)\n\n    print('model initial ends')\n    trainer = Trainer(args, model, train_loader, test_loader, verbose=True)\n    trainer.train()\n",
+    "dependencies": [
+      "trainer.train",
+      "print",
+      "train_dataset.shape",
+      "Trainer",
+      "torch.set_num_threads",
+      "Data.DataLoader",
+      "Dataset",
+      "FormerTime"
+    ]
+  },
+  {
+    "file": "repo-clone\\process.py",
+    "name": "Trainer",
+    "type": "ClassDef",
+    "docstring": null,
+    "code": "class Trainer():\n    def __init__(self, args, model, train_loader, test_loader, verbose=False):\n        self.args = args\n        self.verbose = verbose\n        self.device = args.device\n        self.print_process(self.device)\n        self.model = model.to(torch.device(self.device))\n\n        self.train_loader = train_loader\n        self.test_loader = test_loader\n        self.lr_decay = args.lr_decay_rate\n        self.lr_decay_steps = args.lr_decay_steps\n\n        self.cr = CE(self.model) if args.loss == 'ce' else BCE(self.model)\n\n        self.test_cr = torch.nn.CrossEntropyLoss() if args.loss == 'ce' else torch.nn.BCELoss()\n        self.num_epoch = args.num_epoch\n        self.eval_per_steps = args.eval_per_steps\n        self.save_path = args.save_path\n        if self.num_epoch:\n            self.result_file = open(self.save_path + '/result.txt', 'w')\n            self.result_file.close()\n\n        self.step = 0\n        self.best_metric = -1e9\n        self.metric = 'acc'\n\n    def train(self):\n        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.args.lr)\n        self.scheduler = LambdaLR(self.optimizer, lr_lambda=lambda step: self.lr_decay ** step, verbose=self.verbose)\n        for epoch in range(self.num_epoch):\n            loss_epoch, time_cost = self._train_one_epoch()\n            self.result_file = open(self.save_path + '/result.txt', 'a+')\n            self.print_process(\n                'Model train epoch:{0},loss:{1},training_time:{2}'.format(epoch + 1, loss_epoch, time_cost))\n            print('Model train epoch:{0},loss:{1},training_time:{2}'.format(epoch + 1, loss_epoch, time_cost),\n                  file=self.result_file)\n            self.result_file.close()\n        self.print_process(self.best_metric)\n        return self.best_metric\n\n    def _train_one_epoch(self):\n        t0 = time.perf_counter()\n        self.model.train()\n        tqdm_dataloader = tqdm(self.train_loader) if self.verbose else self.train_loader\n\n        loss_sum = 0\n        for idx, batch in enumerate(tqdm_dataloader):\n            batch = [x.to(self.device) for x in batch]\n\n            self.optimizer.zero_grad()\n            loss = self.cr.compute(batch)\n            loss_sum += loss.item()\n\n            loss.backward()\n            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5)\n            self.optimizer.step()\n\n            self.step += 1\n            if self.step % self.lr_decay_steps == 0:\n                self.scheduler.step()\n            if self.step % self.eval_per_steps == 0:\n                metric = self.eval_model()\n                self.print_process(metric)\n                self.result_file = open(self.save_path + '/result.txt', 'a+')\n                print('step{0}'.format(self.step), file=self.result_file)\n                print(metric, file=self.result_file)\n                self.result_file.close()\n                if metric[self.metric] >= self.best_metric:\n                    if self.args.save_model:\n                        torch.save(self.model.state_dict(), self.save_path + '/model.pkl')\n                    self.result_file = open(self.save_path + '/result.txt', 'a+')\n                    print('saving model of step{0}'.format(self.step), file=self.result_file)\n                    self.result_file.close()\n                    self.best_metric = metric[self.metric]\n                self.model.train()\n\n        return loss_sum / (idx + 1), time.perf_counter() - t0\n\n    def eval_model(self):\n        self.model.eval()\n        tqdm_data_loader = tqdm(self.test_loader) if self.verbose else self.test_loader\n        metrics = {'acc': 0, 'f1': 0}\n        pred = []\n        label = []\n        test_loss = 0\n\n        with torch.no_grad():\n            for idx, batch in enumerate(tqdm_data_loader):\n                batch = [x.to(self.device) for x in batch]\n                ret = self.compute_metrics(batch)\n                if len(ret) == 2:\n                    pred_b, label_b = ret\n                    pred += pred_b\n                    label += label_b\n                else:\n                    pred_b, label_b, test_loss_b = ret\n                    pred += pred_b\n                    label += label_b\n                    test_loss += test_loss_b.cpu().item()\n        confusion_mat = self._confusion_mat(label, pred)\n        self.print_process(confusion_mat)\n        self.result_file = open(self.save_path + '/result.txt', 'a+')\n        print(confusion_mat, file=self.result_file)\n        self.result_file.close()\n        if self.args.num_class == 2:\n            metrics['f1'] = f1_score(y_true=label, y_pred=pred)\n            metrics['precision'] = precision_score(y_true=label, y_pred=pred)\n            metrics['recall'] = recall_score(y_true=label, y_pred=pred)\n        else:\n            metrics['f1'] = f1_score(y_true=label, y_pred=pred, average='macro')\n            metrics['micro_f1'] = f1_score(y_true=label, y_pred=pred, average='micro')\n        metrics['acc'] = accuracy_score(y_true=label, y_pred=pred)\n        metrics['test_loss'] = test_loss / (idx + 1)\n        return metrics\n\n    def compute_metrics(self, batch):\n        if len(batch) == 2:\n            seqs, label = batch\n            scores = self.model(seqs)\n        else:\n            seqs1, seqs2, label = batch\n            scores = self.model((seqs1, seqs2))\n        if self.args.loss == 'ce':\n            _, pred = torch.topk(scores, 1)\n            test_loss = self.test_cr(scores, label.view(-1).long())\n            pred = pred.view(-1).tolist()\n            return pred, label.tolist(), test_loss\n        else:\n            pred = (scores > self.threshold).int().view(-1).tolist()\n            test_loss = self.test_cr(scores.view(-1), label.view(-1).float())\n            return pred, label.tolist(), test_loss\n\n    def _confusion_mat(self, label, pred):\n        if self.args.loss == 'ce':\n            mat = np.zeros((self.args.num_class, self.args.num_class))\n        else:\n            mat = np.zeros((2, 2))\n        for _label, _pred in zip(label, pred):\n            mat[_label, _pred] += 1\n        return mat\n\n    def print_process(self, *x):\n        if self.verbose:\n            print(*x)\n",
+    "dependencies": [
+      "torch.nn.CrossEntropyLoss",
+      "self.model.train",
+      "self.eval_model",
+      "self.result_file.close",
+      "torch.no_grad",
+      "test_loss_b.cpu",
+      "precision_score",
+      "BCE",
+      "self.test_cr",
+      "loss.backward",
+      "enumerate",
+      "self.model.eval",
+      "(scores > self.threshold).int().view(-1).tolist",
+      "pred.view",
+      "self.model",
+      "tqdm",
+      "accuracy_score",
+      "open",
+      "self.model.parameters",
+      "'saving model of step{0}'.format",
+      "model.to",
+      "self.cr.compute",
+      "self.model.state_dict",
+      "f1_score",
+      "LambdaLR",
+      "self.compute_metrics",
+      "(scores > self.threshold).int().view",
+      "self._train_one_epoch",
+      "self.optimizer.zero_grad",
+      "range",
+      "scores.view",
+      "print",
+      "label.view",
+      "torch.save",
+      "recall_score",
+      "torch.nn.utils.clip_grad_norm_",
+      "'Model train epoch:{0},loss:{1},training_time:{2}'.format",
+      "torch.nn.BCELoss",
+      "pred.view(-1).tolist",
+      "torch.device",
+      "len",
+      "label.view(-1).long",
+      "np.zeros",
+      "loss.item",
+      "self._confusion_mat",
+      "label.view(-1).float",
+      "label.tolist",
+      "test_loss_b.cpu().item",
+      "x.to",
+      "CE",
+      "torch.optim.AdamW",
+      "'step{0}'.format",
+      "zip",
+      "torch.topk",
+      "time.perf_counter",
+      "self.print_process",
+      "(scores > self.threshold).int",
+      "self.scheduler.step",
+      "self.optimizer.step"
+    ]
+  },
+  {
+    "file": "repo-clone\\process.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def __init__(self, args, model, train_loader, test_loader, verbose=False):\n        self.args = args\n        self.verbose = verbose\n        self.device = args.device\n        self.print_process(self.device)\n        self.model = model.to(torch.device(self.device))\n\n        self.train_loader = train_loader\n        self.test_loader = test_loader\n        self.lr_decay = args.lr_decay_rate\n        self.lr_decay_steps = args.lr_decay_steps\n\n        self.cr = CE(self.model) if args.loss == 'ce' else BCE(self.model)\n\n        self.test_cr = torch.nn.CrossEntropyLoss() if args.loss == 'ce' else torch.nn.BCELoss()\n        self.num_epoch = args.num_epoch\n        self.eval_per_steps = args.eval_per_steps\n        self.save_path = args.save_path\n        if self.num_epoch:\n            self.result_file = open(self.save_path + '/result.txt', 'w')\n            self.result_file.close()\n\n        self.step = 0\n        self.best_metric = -1e9\n        self.metric = 'acc'\n",
+    "dependencies": [
+      "torch.nn.CrossEntropyLoss",
+      "CE",
+      "self.result_file.close",
+      "open",
+      "model.to",
+      "BCE",
+      "torch.nn.BCELoss",
+      "torch.device",
+      "self.print_process"
+    ]
+  },
+  {
+    "file": "repo-clone\\process.py",
+    "name": "train",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def train(self):\n        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.args.lr)\n        self.scheduler = LambdaLR(self.optimizer, lr_lambda=lambda step: self.lr_decay ** step, verbose=self.verbose)\n        for epoch in range(self.num_epoch):\n            loss_epoch, time_cost = self._train_one_epoch()\n            self.result_file = open(self.save_path + '/result.txt', 'a+')\n            self.print_process(\n                'Model train epoch:{0},loss:{1},training_time:{2}'.format(epoch + 1, loss_epoch, time_cost))\n            print('Model train epoch:{0},loss:{1},training_time:{2}'.format(epoch + 1, loss_epoch, time_cost),\n                  file=self.result_file)\n            self.result_file.close()\n        self.print_process(self.best_metric)\n        return self.best_metric\n",
+    "dependencies": [
+      "range",
+      "torch.optim.AdamW",
+      "print",
+      "self.result_file.close",
+      "open",
+      "self.model.parameters",
+      "'Model train epoch:{0},loss:{1},training_time:{2}'.format",
+      "LambdaLR",
+      "self.print_process",
+      "self._train_one_epoch"
+    ]
+  },
+  {
+    "file": "repo-clone\\process.py",
+    "name": "_train_one_epoch",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def _train_one_epoch(self):\n        t0 = time.perf_counter()\n        self.model.train()\n        tqdm_dataloader = tqdm(self.train_loader) if self.verbose else self.train_loader\n\n        loss_sum = 0\n        for idx, batch in enumerate(tqdm_dataloader):\n            batch = [x.to(self.device) for x in batch]\n\n            self.optimizer.zero_grad()\n            loss = self.cr.compute(batch)\n            loss_sum += loss.item()\n\n            loss.backward()\n            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5)\n            self.optimizer.step()\n\n            self.step += 1\n            if self.step % self.lr_decay_steps == 0:\n                self.scheduler.step()\n            if self.step % self.eval_per_steps == 0:\n                metric = self.eval_model()\n                self.print_process(metric)\n                self.result_file = open(self.save_path + '/result.txt', 'a+')\n                print('step{0}'.format(self.step), file=self.result_file)\n                print(metric, file=self.result_file)\n                self.result_file.close()\n                if metric[self.metric] >= self.best_metric:\n                    if self.args.save_model:\n                        torch.save(self.model.state_dict(), self.save_path + '/model.pkl')\n                    self.result_file = open(self.save_path + '/result.txt', 'a+')\n                    print('saving model of step{0}'.format(self.step), file=self.result_file)\n                    self.result_file.close()\n                    self.best_metric = metric[self.metric]\n                self.model.train()\n\n        return loss_sum / (idx + 1), time.perf_counter() - t0\n",
+    "dependencies": [
+      "self.model.train",
+      "self.eval_model",
+      "self.result_file.close",
+      "loss.backward",
+      "enumerate",
+      "tqdm",
+      "open",
+      "self.model.parameters",
+      "'saving model of step{0}'.format",
+      "self.cr.compute",
+      "self.model.state_dict",
+      "self.optimizer.zero_grad",
+      "print",
+      "torch.save",
+      "torch.nn.utils.clip_grad_norm_",
+      "loss.item",
+      "x.to",
+      "'step{0}'.format",
+      "time.perf_counter",
+      "self.print_process",
+      "self.scheduler.step",
+      "self.optimizer.step"
+    ]
+  },
+  {
+    "file": "repo-clone\\process.py",
+    "name": "eval_model",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def eval_model(self):\n        self.model.eval()\n        tqdm_data_loader = tqdm(self.test_loader) if self.verbose else self.test_loader\n        metrics = {'acc': 0, 'f1': 0}\n        pred = []\n        label = []\n        test_loss = 0\n\n        with torch.no_grad():\n            for idx, batch in enumerate(tqdm_data_loader):\n                batch = [x.to(self.device) for x in batch]\n                ret = self.compute_metrics(batch)\n                if len(ret) == 2:\n                    pred_b, label_b = ret\n                    pred += pred_b\n                    label += label_b\n                else:\n                    pred_b, label_b, test_loss_b = ret\n                    pred += pred_b\n                    label += label_b\n                    test_loss += test_loss_b.cpu().item()\n        confusion_mat = self._confusion_mat(label, pred)\n        self.print_process(confusion_mat)\n        self.result_file = open(self.save_path + '/result.txt', 'a+')\n        print(confusion_mat, file=self.result_file)\n        self.result_file.close()\n        if self.args.num_class == 2:\n            metrics['f1'] = f1_score(y_true=label, y_pred=pred)\n            metrics['precision'] = precision_score(y_true=label, y_pred=pred)\n            metrics['recall'] = recall_score(y_true=label, y_pred=pred)\n        else:\n            metrics['f1'] = f1_score(y_true=label, y_pred=pred, average='macro')\n            metrics['micro_f1'] = f1_score(y_true=label, y_pred=pred, average='micro')\n        metrics['acc'] = accuracy_score(y_true=label, y_pred=pred)\n        metrics['test_loss'] = test_loss / (idx + 1)\n        return metrics\n",
+    "dependencies": [
+      "self._confusion_mat",
+      "self.model.eval",
+      "enumerate",
+      "test_loss_b.cpu().item",
+      "x.to",
+      "tqdm",
+      "print",
+      "len",
+      "accuracy_score",
+      "recall_score",
+      "torch.no_grad",
+      "open",
+      "self.result_file.close",
+      "f1_score",
+      "test_loss_b.cpu",
+      "precision_score",
+      "self.compute_metrics",
+      "self.print_process"
+    ]
+  },
+  {
+    "file": "repo-clone\\process.py",
+    "name": "compute_metrics",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def compute_metrics(self, batch):\n        if len(batch) == 2:\n            seqs, label = batch\n            scores = self.model(seqs)\n        else:\n            seqs1, seqs2, label = batch\n            scores = self.model((seqs1, seqs2))\n        if self.args.loss == 'ce':\n            _, pred = torch.topk(scores, 1)\n            test_loss = self.test_cr(scores, label.view(-1).long())\n            pred = pred.view(-1).tolist()\n            return pred, label.tolist(), test_loss\n        else:\n            pred = (scores > self.threshold).int().view(-1).tolist()\n            test_loss = self.test_cr(scores.view(-1), label.view(-1).float())\n            return pred, label.tolist(), test_loss\n",
+    "dependencies": [
+      "label.view(-1).float",
+      "(scores > self.threshold).int().view(-1).tolist",
+      "(scores > self.threshold).int",
+      "label.tolist",
+      "pred.view",
+      "self.model",
+      "self.test_cr",
+      "scores.view",
+      "label.view",
+      "(scores > self.threshold).int().view",
+      "pred.view(-1).tolist",
+      "torch.topk",
+      "len",
+      "label.view(-1).long"
+    ]
+  },
+  {
+    "file": "repo-clone\\process.py",
+    "name": "_confusion_mat",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def _confusion_mat(self, label, pred):\n        if self.args.loss == 'ce':\n            mat = np.zeros((self.args.num_class, self.args.num_class))\n        else:\n            mat = np.zeros((2, 2))\n        for _label, _pred in zip(label, pred):\n            mat[_label, _pred] += 1\n        return mat\n",
+    "dependencies": [
+      "zip",
+      "np.zeros"
+    ]
+  },
+  {
+    "file": "repo-clone\\process.py",
+    "name": "print_process",
+    "type": "FunctionDef",
+    "docstring": null,
+    "code": "    def print_process(self, *x):\n        if self.verbose:\n            print(*x)\n",
+    "dependencies": [
+      "print"
+    ]
+  }
+]
