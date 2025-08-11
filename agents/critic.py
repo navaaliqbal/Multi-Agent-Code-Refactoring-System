@@ -1,16 +1,15 @@
-from langchain_huggingface.llms import HuggingFacePipeline
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from langchain.prompts import ChatPromptTemplate
+from langchain_community.llms import Ollama
+from llama_cpp import Llama
 import os
 import json
 
-tokenizer = AutoTokenizer.from_pretrained("codellama/CodeLlama-13b-Instruct-hf")
-model = AutoModelForCausalLM.from_pretrained("codellama/CodeLlama-13b-Instruct-hf")
-
-pipe = pipeline("text-generation", model = model, tokenizer=tokenizer)
-llm = HuggingFacePipeline(pipeline=pipe)
-
-with open("parsed files/Python-Speech-Recognition-.json", "r", encoding = "utf-8") as f:
+llm = Llama.from_pretrained(
+	repo_id="TheBloke/CodeLlama-13B-Instruct-GGUF",
+	filename="codellama-13b-instruct.Q2_K.gguf",
+    n_ctx=8192,
+)
+with open("parsed files/Python-Speech-Recognition.json", "r", encoding="utf-8") as f:
     chunks = json.load(f)
 
 def heuristics_filter(metrics):
@@ -18,12 +17,14 @@ def heuristics_filter(metrics):
         metrics["cyclomatic_complexity"] > 10 or
         metrics["nesting_depth"] > 3 or
         metrics["line_count"] > 50 or
-        not metrics["docstring"] or 
+        not metrics.get("has_docstring", False) or 
         len(metrics["magic_numbers"]) >3
     )
 
 prompt_template = ChatPromptTemplate.from_template("""
-You are a seasoned Software Refactoring Critic tasked with identifying all code smells, anti-patterns, and design inefficiencies in the following code. Your goal is to provide actionable, high-quality suggestions that align with modern software engineering best practices.
+[INST] <<SYS>>
+You are a seasoned Software Refactoring Critic. Your job is to identify all code smells, anti-patterns, and design inefficiencies, and provide actionable, high-quality suggestions that align with modern software engineering best practices.
+<</SYS>>
 
 --- CONTEXT ---
 - **File**: {file}
@@ -50,6 +51,7 @@ Carefully review the code and answer the following:
 5. **Summary Recommendation**: Conclude with an overall refactoring priority (low/medium/high) and a rationale.
 
 Respond in a structured and concise format with bullet points where helpful.
+[/INST]
 """)
 
 for chunk in chunks:
@@ -71,10 +73,17 @@ for chunk in chunks:
         )
         prompt_text = messages[0].content
         print(f"\nCritiquing {chunk['name']}...\n")
-        response = llm(prompt_text)
-        chunk["llm_response"] = response.strip()
-
-with open("refactored_Python-Speech-Recognition-.json", "w") as f:
+        print(prompt_text)
+        response = llm.create_completion(
+        prompt=prompt_text,
+        max_tokens=512,   # enough room for a full answer
+        temperature=0.7
+        )
+        print(response)
+        llm_text = response["choices"][0]["text"]
+        print(llm_text)
+        chunk["llm_response"] = llm_text.strip()
+with open("parsed files/Python-Speech-Recognition.json", "w") as f:
     json.dump(chunks, f, indent=2)
 
 
