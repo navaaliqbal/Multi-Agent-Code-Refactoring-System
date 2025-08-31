@@ -117,14 +117,55 @@ def parse_file(filepath):
     chunks = []
     module_path = filepath.replace("\\", "/")
     class_name = None
-    found_code_chunk = False
+    # found_code_chunk = False
 
-    for node in ast.walk(tree):
+    def visit(node, class_name=None):
+        # if isinstance(node, ast.ClassDef):
+        #     # Recurse into this class
+        #     for child in node.body:
+        #         visit(child, class_name=node.name)
         if isinstance(node, ast.ClassDef):
-            class_name = node.name
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            docstring = ast.get_docstring(node)
+            code = extract_code(source_lines, node)
+
+            chunk = {
+                "id": f"{module_path}::{node.name}",
+                "file": module_path,
+                "name": node.name,
+                "type": "ClassDef",
+                "language": "python",
+                "ast_path": get_ast_path(node),
+                "is_script_entry": False,
+                "context": {
+                    "class": None,
+                    "is_method": False,
+                    "is_async": False,
+                    "decorators": [],
+                    "args_count": 0,
+                    "returns": None
+                },
+                "code_metrics": {
+                    "line_count": len(code.splitlines()),
+                    "nesting_depth": get_nesting_depth(node),
+                    "cyclomatic_complexity": get_cyclomatic_complexity(node),
+                    "magic_numbers": extract_magic_numbers(node),
+                    "has_docstring": bool(docstring)
+                },
+                "docstring": docstring or "",
+                "code": code,
+                "comments": comments,
+                "dependencies": extract_dependencies(node),
+                "imports": imports
+            }
+            chunks.append(chunk)
+
+            # recurse into class body
+            for child in node.body:
+                visit(child, class_name=node.name)
+            return  
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             try:
-                is_method = any(isinstance(p, ast.ClassDef) for p in ast.iter_parent(node)) if hasattr(ast, 'iter_parent') else bool(class_name)
+                is_method = class_name is not None
                 decorators = [ast.unparse(d) for d in node.decorator_list] if hasattr(node, 'decorator_list') else []
                 args_count = len(node.args.args) if hasattr(node, 'args') else 0
                 return_type = ast.unparse(node.returns) if hasattr(node, 'returns') and node.returns else None
@@ -141,7 +182,7 @@ def parse_file(filepath):
                     "ast_path": get_ast_path(node),
                     "is_script_entry": False,
                     "context": {
-                        "class": class_name if class_name else None,
+                        "class": class_name,
                         "is_method": is_method,
                         "is_async": isinstance(node, ast.AsyncFunctionDef),
                         "decorators": decorators,
@@ -155,18 +196,37 @@ def parse_file(filepath):
                         "magic_numbers": extract_magic_numbers(node),
                         "has_docstring": bool(docstring)
                     },
-                    "docstring": docstring if docstring else "",
+                    "docstring": docstring or "",
                     "code": code,
                     "comments": comments,
                     "dependencies": deps,
                     "imports": imports
                 }
                 chunks.append(chunk)
-                found_code_chunk=True
             except Exception as e:
-                print(f"⚠️ Failed on node in {filepath}: {e}")
-    # Add top-level script block if no functions/classes found
-    if not found_code_chunk and source.strip():
+                print(f" Failed on node in {filepath}: {e}")
+
+        # Always continue traversing children
+        # for child in ast.iter_child_nodes(node):
+        #     visit(child, class_name)
+        # if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        for child in ast.iter_child_nodes(node):
+                visit(child, class_name)
+    visit(tree)
+
+    # # Add top-level script block if no functions/classes found
+    # if not found_code_chunk and source.strip():
+    top_level_stmts = []
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            top_level_stmts.append(node)
+
+    if top_level_stmts:
+        # Reconstruct source code for top-level statements
+        tl_code = "".join(
+            "".join(source_lines[node.lineno - 1: node.end_lineno])
+            for node in top_level_stmts if hasattr(node, "lineno")
+        )
         chunk = {
             "id": f"{module_path}::__top_level__",
             "file": module_path,
@@ -184,14 +244,14 @@ def parse_file(filepath):
                 "returns": None
             },
             "code_metrics": {
-                "line_count": len(source_lines),
+                "line_count": len(tl_code.splitlines()),
                 "nesting_depth": 0,
-                "cyclomatic_complexity": 0,
+                "cyclomatic_complexity": get_cyclomatic_complexity(tree),
                 "magic_numbers": extract_magic_numbers(tree),
-                "has_docstring": False
+                "has_docstring": bool(ast.get_docstring(tree))
             },
-            "docstring": "",
-            "code": source,
+            "docstring":ast.get_docstring(tree) or "",
+            "code": tl_code,
             "comments": comments,
             "dependencies": extract_dependencies(tree),
             "imports": imports
