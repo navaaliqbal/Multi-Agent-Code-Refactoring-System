@@ -1,0 +1,1038 @@
+[
+  {
+    "id": "repo-clone/main.py::main",
+    "file": "repo-clone/main.py",
+    "name": "main",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "FunctionDef:main"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": "None"
+    },
+    "code_metrics": {
+      "line_count": 16,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [
+        2,
+        500,
+        5000,
+        12345,
+        15000
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "def main() -> None:\n    # create the POS system and setup the payment processor\n    system = POSSystem()\n    system.setup_payment_processor(\"https://api.stripe.com/v2\")\n\n    # create the order\n    order = Order(\n        12345, \"Arjan\", \"Sesame street 104\", \"1234\", \"Amsterdam\", \"hi@arjancodes.com\"\n    )\n    order.create_line_item(\"Keyboard\", 1, 5000)\n    order.create_line_item(\"SSD\", 1, 15000)\n    order.create_line_item(\"USB cable\", 2, 500)\n\n    # register and process the order\n    system.register_order(order)\n    system.process_order(order)\n",
+    "comments": [
+      "create the POS system and setup the payment processor",
+      "create the order",
+      "register and process the order"
+    ],
+    "dependencies": [
+      "Order",
+      "POSSystem",
+      "order.create_line_item",
+      "system.process_order",
+      "system.register_order",
+      "system.setup_payment_processor"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.system.POSSystem"
+    ]
+  },
+  {
+    "id": "repo-clone/main.py::__top_level__",
+    "file": "repo-clone/main.py",
+    "name": "__top_level__",
+    "type": "TopLevel",
+    "language": "python",
+    "ast_path": [
+      "Module"
+    ],
+    "is_script_entry": true,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 4,
+      "nesting_depth": 0,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        2,
+        500,
+        5000,
+        12345,
+        15000
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "from pos.order import Order\nfrom pos.system import POSSystem\nif __name__ == \"__main__\":\n    main()\n",
+    "comments": [
+      "create the POS system and setup the payment processor",
+      "create the order",
+      "register and process the order"
+    ],
+    "dependencies": [
+      "Order",
+      "POSSystem",
+      "main",
+      "order.create_line_item",
+      "system.process_order",
+      "system.register_order",
+      "system.setup_payment_processor"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.system.POSSystem"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/order.py::OrderStatus",
+    "file": "repo-clone/pos/order.py",
+    "name": "OrderStatus",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:OrderStatus"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 8,
+      "nesting_depth": 0,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": true
+    },
+    "docstring": "Order status",
+    "code": "class OrderStatus(Enum):\n    \"\"\"Order status\"\"\"\n\n    OPEN = auto()\n    PAID = auto()\n    CANCELLED = auto()\n    DELIVERED = auto()\n    RETURNED = auto()\n",
+    "comments": [],
+    "dependencies": [
+      "auto"
+    ],
+    "imports": [
+      "dataclasses.dataclass",
+      "dataclasses.field",
+      "enum.Enum",
+      "enum.auto"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/order.py::Order",
+    "file": "repo-clone/pos/order.py",
+    "name": "Order",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Order"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 20,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class Order:\n    customer_id: int = 0\n    customer_name: str = \"\"\n    customer_address: str = \"\"\n    customer_postal_code: str = \"\"\n    customer_city: str = \"\"\n    customer_email: str = \"\"\n    items: list[str] = field(default_factory=list)\n    quantities: list[int] = field(default_factory=list)\n    prices: list[int] = field(default_factory=list)\n    _status: OrderStatus = OrderStatus.OPEN\n    id: str = \"\"\n\n    def create_line_item(self, name: str, quantity: int, price: int) -> None:\n        self.items.append(name)\n        self.quantities.append(quantity)\n        self.prices.append(price)\n\n    def set_status(self, status: OrderStatus):\n        self._status = status\n",
+    "comments": [],
+    "dependencies": [
+      "field",
+      "self.items.append",
+      "self.prices.append",
+      "self.quantities.append"
+    ],
+    "imports": [
+      "dataclasses.dataclass",
+      "dataclasses.field",
+      "enum.Enum",
+      "enum.auto"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/order.py::create_line_item",
+    "file": "repo-clone/pos/order.py",
+    "name": "create_line_item",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Order",
+      "FunctionDef:create_line_item"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Order",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 4,
+      "returns": "None"
+    },
+    "code_metrics": {
+      "line_count": 4,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def create_line_item(self, name: str, quantity: int, price: int) -> None:\n        self.items.append(name)\n        self.quantities.append(quantity)\n        self.prices.append(price)\n",
+    "comments": [],
+    "dependencies": [
+      "self.items.append",
+      "self.prices.append",
+      "self.quantities.append"
+    ],
+    "imports": [
+      "dataclasses.dataclass",
+      "dataclasses.field",
+      "enum.Enum",
+      "enum.auto"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/order.py::set_status",
+    "file": "repo-clone/pos/order.py",
+    "name": "set_status",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:Order",
+      "FunctionDef:set_status"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "Order",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def set_status(self, status: OrderStatus):\n        self._status = status\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "dataclasses.dataclass",
+      "dataclasses.field",
+      "enum.Enum",
+      "enum.auto"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/order.py::__top_level__",
+    "file": "repo-clone/pos/order.py",
+    "name": "__top_level__",
+    "type": "TopLevel",
+    "language": "python",
+    "ast_path": [
+      "Module"
+    ],
+    "is_script_entry": true,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 0,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "from dataclasses import dataclass, field\nfrom enum import Enum, auto\n",
+    "comments": [],
+    "dependencies": [
+      "auto",
+      "field",
+      "self.items.append",
+      "self.prices.append",
+      "self.quantities.append"
+    ],
+    "imports": [
+      "dataclasses.dataclass",
+      "dataclasses.field",
+      "enum.Enum",
+      "enum.auto"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::PaymentServiceConnectionError",
+    "file": "repo-clone/pos/payment.py",
+    "name": "PaymentServiceConnectionError",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:PaymentServiceConnectionError"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 0,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": true
+    },
+    "docstring": "Custom error that is raised when we couldn't connect to the payment service.",
+    "code": "class PaymentServiceConnectionError(Exception):\n    \"\"\"Custom error that is raised when we couldn't connect to the payment service.\"\"\"\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::OrderRepository",
+    "file": "repo-clone/pos/payment.py",
+    "name": "OrderRepository",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:OrderRepository"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 6,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class OrderRepository(Protocol):\n    def find_order(self, order_id: str) -> Order:\n        ...\n\n    def compute_order_total_price(self, order: Order) -> int:\n        ...\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::find_order",
+    "file": "repo-clone/pos/payment.py",
+    "name": "find_order",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:OrderRepository",
+      "FunctionDef:find_order"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "OrderRepository",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": "Order"
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def find_order(self, order_id: str) -> Order:\n        ...\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::compute_order_total_price",
+    "file": "repo-clone/pos/payment.py",
+    "name": "compute_order_total_price",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:OrderRepository",
+      "FunctionDef:compute_order_total_price"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "OrderRepository",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": "int"
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def compute_order_total_price(self, order: Order) -> int:\n        ...\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::StripePaymentProcessor",
+    "file": "repo-clone/pos/payment.py",
+    "name": "StripePaymentProcessor",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:StripePaymentProcessor"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 17,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        100
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class StripePaymentProcessor:\n    def __init__(self, system: OrderRepository):\n        self.connected = False\n        self.system = system\n\n    def connect_to_service(self, url: str) -> None:\n        print(f\"Connecting to payment processing service at url {url}... done!\")\n        self.connected = True\n\n    def process_payment(self, order_id: str) -> None:\n        if not self.connected:\n            raise PaymentServiceConnectionError()\n        order = self.system.find_order(order_id)\n        total_price = self.system.compute_order_total_price(order)\n        print(\n            f\"Processing payment of ${(total_price / 100):.2f}, reference: {order.id}.\"\n        )\n",
+    "comments": [],
+    "dependencies": [
+      "PaymentServiceConnectionError",
+      "print",
+      "self.system.compute_order_total_price",
+      "self.system.find_order"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::__init__",
+    "file": "repo-clone/pos/payment.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:StripePaymentProcessor",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "StripePaymentProcessor",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 3,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self, system: OrderRepository):\n        self.connected = False\n        self.system = system\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::connect_to_service",
+    "file": "repo-clone/pos/payment.py",
+    "name": "connect_to_service",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:StripePaymentProcessor",
+      "FunctionDef:connect_to_service"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "StripePaymentProcessor",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": "None"
+    },
+    "code_metrics": {
+      "line_count": 3,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def connect_to_service(self, url: str) -> None:\n        print(f\"Connecting to payment processing service at url {url}... done!\")\n        self.connected = True\n",
+    "comments": [],
+    "dependencies": [
+      "print"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::process_payment",
+    "file": "repo-clone/pos/payment.py",
+    "name": "process_payment",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:StripePaymentProcessor",
+      "FunctionDef:process_payment"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "StripePaymentProcessor",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": "None"
+    },
+    "code_metrics": {
+      "line_count": 8,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        100
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def process_payment(self, order_id: str) -> None:\n        if not self.connected:\n            raise PaymentServiceConnectionError()\n        order = self.system.find_order(order_id)\n        total_price = self.system.compute_order_total_price(order)\n        print(\n            f\"Processing payment of ${(total_price / 100):.2f}, reference: {order.id}.\"\n        )\n",
+    "comments": [],
+    "dependencies": [
+      "PaymentServiceConnectionError",
+      "print",
+      "self.system.compute_order_total_price",
+      "self.system.find_order"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/payment.py::__top_level__",
+    "file": "repo-clone/pos/payment.py",
+    "name": "__top_level__",
+    "type": "TopLevel",
+    "language": "python",
+    "ast_path": [
+      "Module"
+    ],
+    "is_script_entry": true,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 0,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        100
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "from typing import Protocol\nfrom pos.order import Order\n",
+    "comments": [],
+    "dependencies": [
+      "PaymentServiceConnectionError",
+      "print",
+      "self.system.compute_order_total_price",
+      "self.system.find_order"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "typing.Protocol"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::generate_id",
+    "file": "repo-clone/pos/system.py",
+    "name": "generate_id",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "FunctionDef:generate_id"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": "str"
+    },
+    "code_metrics": {
+      "line_count": 3,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [
+        6
+      ],
+      "has_docstring": true
+    },
+    "docstring": "Helper function for generating an id.",
+    "code": "def generate_id(length: int = 6) -> str:\n    \"\"\"Helper function for generating an id.\"\"\"\n    return \"\".join(random.choices(string.ascii_uppercase, k=length))\n",
+    "comments": [],
+    "dependencies": [
+      "''.join",
+      "random.choices"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::POSSystem",
+    "file": "repo-clone/pos/system.py",
+    "name": "POSSystem",
+    "type": "ClassDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:POSSystem"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 25,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "class POSSystem:\n    def __init__(self):\n        self.payment_processor = StripePaymentProcessor(self)\n        self.orders: dict[str, Order] = {}\n\n    def setup_payment_processor(self, url: str) -> None:\n        self.payment_processor.connect_to_service(url)\n\n    def register_order(self, order: Order):\n        order.id = generate_id()\n        self.orders[order.id] = order\n\n    def find_order(self, order_id: str) -> Order:\n        return self.orders[order_id]\n\n    def compute_order_total_price(self, order: Order) -> int:\n        total = 0\n        for i in range(len(order.prices)):\n            total += order.quantities[i] * order.prices[i]\n        return total\n\n    def process_order(self, order: Order) -> None:\n        self.payment_processor.process_payment(order.id)\n        order.set_status(OrderStatus.PAID)\n        print(\"Shipping order to customer.\")\n",
+    "comments": [],
+    "dependencies": [
+      "StripePaymentProcessor",
+      "generate_id",
+      "len",
+      "order.set_status",
+      "print",
+      "range",
+      "self.payment_processor.connect_to_service",
+      "self.payment_processor.process_payment"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::__init__",
+    "file": "repo-clone/pos/system.py",
+    "name": "__init__",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:POSSystem",
+      "FunctionDef:__init__"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "POSSystem",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 1,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 3,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def __init__(self):\n        self.payment_processor = StripePaymentProcessor(self)\n        self.orders: dict[str, Order] = {}\n",
+    "comments": [],
+    "dependencies": [
+      "StripePaymentProcessor"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::setup_payment_processor",
+    "file": "repo-clone/pos/system.py",
+    "name": "setup_payment_processor",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:POSSystem",
+      "FunctionDef:setup_payment_processor"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "POSSystem",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": "None"
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def setup_payment_processor(self, url: str) -> None:\n        self.payment_processor.connect_to_service(url)\n",
+    "comments": [],
+    "dependencies": [
+      "self.payment_processor.connect_to_service"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::register_order",
+    "file": "repo-clone/pos/system.py",
+    "name": "register_order",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:POSSystem",
+      "FunctionDef:register_order"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "POSSystem",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 3,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def register_order(self, order: Order):\n        order.id = generate_id()\n        self.orders[order.id] = order\n",
+    "comments": [],
+    "dependencies": [
+      "generate_id"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::find_order",
+    "file": "repo-clone/pos/system.py",
+    "name": "find_order",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:POSSystem",
+      "FunctionDef:find_order"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "POSSystem",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": "Order"
+    },
+    "code_metrics": {
+      "line_count": 2,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def find_order(self, order_id: str) -> Order:\n        return self.orders[order_id]\n",
+    "comments": [],
+    "dependencies": [],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::compute_order_total_price",
+    "file": "repo-clone/pos/system.py",
+    "name": "compute_order_total_price",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:POSSystem",
+      "FunctionDef:compute_order_total_price"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "POSSystem",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": "int"
+    },
+    "code_metrics": {
+      "line_count": 5,
+      "nesting_depth": 2,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def compute_order_total_price(self, order: Order) -> int:\n        total = 0\n        for i in range(len(order.prices)):\n            total += order.quantities[i] * order.prices[i]\n        return total\n",
+    "comments": [],
+    "dependencies": [
+      "len",
+      "range"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::process_order",
+    "file": "repo-clone/pos/system.py",
+    "name": "process_order",
+    "type": "FunctionDef",
+    "language": "python",
+    "ast_path": [
+      "Module",
+      "ClassDef:POSSystem",
+      "FunctionDef:process_order"
+    ],
+    "is_script_entry": false,
+    "context": {
+      "class": "POSSystem",
+      "is_method": true,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 2,
+      "returns": "None"
+    },
+    "code_metrics": {
+      "line_count": 4,
+      "nesting_depth": 1,
+      "cyclomatic_complexity": 1,
+      "magic_numbers": [],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "    def process_order(self, order: Order) -> None:\n        self.payment_processor.process_payment(order.id)\n        order.set_status(OrderStatus.PAID)\n        print(\"Shipping order to customer.\")\n",
+    "comments": [],
+    "dependencies": [
+      "order.set_status",
+      "print",
+      "self.payment_processor.process_payment"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  },
+  {
+    "id": "repo-clone/pos/system.py::__top_level__",
+    "file": "repo-clone/pos/system.py",
+    "name": "__top_level__",
+    "type": "TopLevel",
+    "language": "python",
+    "ast_path": [
+      "Module"
+    ],
+    "is_script_entry": true,
+    "context": {
+      "class": null,
+      "is_method": false,
+      "is_async": false,
+      "decorators": [],
+      "args_count": 0,
+      "returns": null
+    },
+    "code_metrics": {
+      "line_count": 4,
+      "nesting_depth": 0,
+      "cyclomatic_complexity": 2,
+      "magic_numbers": [
+        6
+      ],
+      "has_docstring": false
+    },
+    "docstring": "",
+    "code": "import random\nimport string\nfrom pos.order import Order, OrderStatus\nfrom pos.payment import StripePaymentProcessor\n",
+    "comments": [],
+    "dependencies": [
+      "''.join",
+      "StripePaymentProcessor",
+      "generate_id",
+      "len",
+      "order.set_status",
+      "print",
+      "random.choices",
+      "range",
+      "self.payment_processor.connect_to_service",
+      "self.payment_processor.process_payment"
+    ],
+    "imports": [
+      "pos.order.Order",
+      "pos.order.OrderStatus",
+      "pos.payment.StripePaymentProcessor",
+      "random",
+      "string"
+    ]
+  }
+]
